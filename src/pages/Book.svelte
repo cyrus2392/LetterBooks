@@ -2,7 +2,7 @@
   import Cover from '../components/Cover.svelte';
   import Stars from '../components/Stars.svelte';
   import LogReadDialog from '../components/LogReadDialog.svelte';
-  import { getAuthor, TYPE_LABELS } from '../lib/data.js';
+  import { getBook, TYPE_LABELS } from '../lib/data.js';
   import { isRead, shelfOf, setShelf, readsOf, latestRating, getEntry } from '../lib/store.svelte.js';
   import { toggleRead } from '../lib/actions.js';
   import { formatDate } from '../lib/format.js';
@@ -10,11 +10,7 @@
 
   let { authorSlug, bookId } = $props();
 
-  const loaded = $derived(getAuthor(authorSlug).then((author) => {
-    const book = author.books.find((b) => b.id === bookId);
-    if (!book) throw new Error('Book not found');
-    return { author, book };
-  }));
+  const loaded = $derived(getBook(authorSlug, bookId));
 
   // null when closed; { editing: read | null } when the log dialog is open.
   let logging = $state(null);
@@ -36,10 +32,16 @@
         {#if book.pseudonym}<span class="muted">(as {book.pseudonym})</span>{/if}
       </p>
       <dl>
-        <dt>Published</dt><dd>{book.year}</dd>
-        <dt>Type</dt><dd>{TYPE_LABELS[book.type] ?? book.type}</dd>
-        {#if book.series}
-          <dt>Series</dt><dd>{book.series.name} #{book.series.position}</dd>
+        {#if book.year}<dt>Published</dt><dd>{book.year}</dd>{/if}
+        {#if book.type}<dt>Type</dt><dd>{TYPE_LABELS[book.type] ?? book.type}</dd>{/if}
+        {#if book.series?.length}
+          <dt>Series</dt>
+          <dd>
+            {#each book.series as s, i}
+              {#if i}<br />{/if}
+              <a href={href('series', author.slug, s.name)}>{s.name}</a>{#if s.position != null}{' '}#{s.position}{/if}
+            {/each}
+          </dd>
         {/if}
       </dl>
 

@@ -26,10 +26,12 @@
       "title": "The Shining",
       "year": 1977,
       "type": "novel",
-      "series": {
-        "name": "The Shining",
-        "position": 1
-      },
+      "series": [
+        {
+          "name": "The Shining",
+          "position": 1
+        }
+      ],
       "coverId": 12376585
     },
     {
@@ -122,10 +124,12 @@
       "title": "The Gunslinger",
       "year": 1982,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 1
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 1
+        }
+      ],
       "coverId": 8396638
     },
     {
@@ -166,10 +170,12 @@
       "title": "The Talisman",
       "year": 1984,
       "type": "novel",
-      "series": {
-        "name": "The Talisman",
-        "position": 1
-      },
+      "series": [
+        {
+          "name": "The Talisman",
+          "position": 1
+        }
+      ],
       "coAuthors": [
         "Peter Straub"
       ],
@@ -214,10 +220,12 @@
       "title": "The Drawing of the Three",
       "year": 1987,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 2
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 2
+        }
+      ],
       "coverId": 14651245
     },
     {
@@ -266,10 +274,12 @@
       "title": "The Waste Lands",
       "year": 1991,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 3
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 3
+        }
+      ],
       "coverId": 8443630
     },
     {
@@ -343,10 +353,12 @@
       "title": "Wizard and Glass",
       "year": 1997,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 4
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 4
+        }
+      ],
       "coverId": 14657088
     },
     {
@@ -395,10 +407,12 @@
       "title": "Black House",
       "year": 2001,
       "type": "novel",
-      "series": {
-        "name": "The Talisman",
-        "position": 2
-      },
+      "series": [
+        {
+          "name": "The Talisman",
+          "position": 2
+        }
+      ],
       "coAuthors": [
         "Peter Straub"
       ],
@@ -426,10 +440,12 @@
       "title": "Wolves of the Calla",
       "year": 2003,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 5
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 5
+        }
+      ],
       "coverId": 14652470
     },
     {
@@ -438,10 +454,12 @@
       "title": "Song of Susannah",
       "year": 2004,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 6
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 6
+        }
+      ],
       "coverId": 8393691
     },
     {
@@ -450,10 +468,12 @@
       "title": "The Dark Tower",
       "year": 2004,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 7
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 7
+        }
+      ],
       "coverId": 14656148
     },
     {
@@ -546,10 +566,12 @@
       "title": "The Wind Through the Keyhole",
       "year": 2012,
       "type": "novel",
-      "series": {
-        "name": "The Dark Tower",
-        "position": 4.5
-      },
+      "series": [
+        {
+          "name": "The Dark Tower",
+          "position": 4.5
+        }
+      ],
       "coverId": 14653576
     },
     {
@@ -566,10 +588,12 @@
       "title": "Doctor Sleep",
       "year": 2013,
       "type": "novel",
-      "series": {
-        "name": "The Shining",
-        "position": 2
-      },
+      "series": [
+        {
+          "name": "The Shining",
+          "position": 2
+        }
+      ],
       "coverId": 14652972
     },
     {
@@ -578,10 +602,12 @@
       "title": "Mr. Mercedes",
       "year": 2014,
       "type": "novel",
-      "series": {
-        "name": "Bill Hodges",
-        "position": 1
-      },
+      "series": [
+        {
+          "name": "Bill Hodges",
+          "position": 1
+        }
+      ],
       "coverId": 14653120
     },
     {
@@ -598,10 +624,12 @@
       "title": "Finders Keepers",
       "year": 2015,
       "type": "novel",
-      "series": {
-        "name": "Bill Hodges",
-        "position": 2
-      },
+      "series": [
+        {
+          "name": "Bill Hodges",
+          "position": 2
+        }
+      ],
       "coverId": 8339525
     },
     {
@@ -618,10 +646,12 @@
       "title": "End of Watch",
       "year": 2016,
       "type": "novel",
-      "series": {
-        "name": "Bill Hodges",
-        "position": 3
-      },
+      "series": [
+        {
+          "name": "Bill Hodges",
+          "position": 3
+        }
+      ],
       "coverId": 12376085
     },
     {
@@ -630,10 +660,12 @@
       "title": "Gwendy's Button Box",
       "year": 2017,
       "type": "novel",
-      "series": {
-        "name": "Gwendy",
-        "position": 1
-      },
+      "series": [
+        {
+          "name": "Gwendy",
+          "position": 1
+        }
+      ],
       "coAuthors": [
         "Richard Chizmar"
       ],
@@ -656,10 +688,12 @@
       "title": "The Outsider",
       "year": 2018,
       "type": "novel",
-      "series": {
-        "name": "Holly Gibney",
-        "position": 1
-      },
+      "series": [
+        {
+          "name": "Holly Gibney",
+          "position": 1
+        }
+      ],
       "coverId": 11412999
     },
     {
@@ -708,10 +742,12 @@
       "title": "Gwendy's Final Task",
       "year": 2022,
       "type": "novel",
-      "series": {
-        "name": "Gwendy",
-        "position": 3
-      },
+      "series": [
+        {
+          "name": "Gwendy",
+          "position": 3
+        }
+      ],
       "coAuthors": [
         "Richard Chizmar"
       ],
@@ -731,10 +767,12 @@
       "title": "Holly",
       "year": 2023,
       "type": "novel",
-      "series": {
-        "name": "Holly Gibney",
-        "position": 2
-      },
+      "series": [
+        {
+          "name": "Holly Gibney",
+          "position": 2
+        }
+      ],
       "coverId": 14655773
     },
     {
@@ -751,10 +789,12 @@
       "title": "Never Flinch",
       "year": 2025,
       "type": "novel",
-      "series": {
-        "name": "Holly Gibney",
-        "position": 3
-      },
+      "series": [
+        {
+          "name": "Holly Gibney",
+          "position": 3
+        }
+      ],
       "coverId": 14825714
     }
   ]

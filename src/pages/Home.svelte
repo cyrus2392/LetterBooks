@@ -1,11 +1,20 @@
 <script>
   import Progress from '../components/Progress.svelte';
   import { getAuthors, getAuthor, coverUrl } from '../lib/data.js';
-  import { readCount } from '../lib/store.svelte.js';
+  import { readCount, isHidden, followedAuthors } from '../lib/store.svelte.js';
   import { href } from '../lib/router.svelte.js';
 
-  // Full author files are needed for per-author read counts.
-  const authors = getAuthors().then((list) => Promise.all(list.map((a) => getAuthor(a.slug))));
+  // Curated authors plus any you've added from search. Full author data is
+  // needed for per-author read counts (live ones come from the browser cache).
+  const authors = $derived.by(() => {
+    const followed = followedAuthors();
+    return getAuthors().then((curated) =>
+      Promise.all([
+        ...curated.map((a) => getAuthor(a.slug)),
+        ...followed.filter((f) => !curated.some((c) => c.olKey === f.olKey)).map((f) => getAuthor(f.olKey)),
+      ]),
+    );
+  });
 </script>
 
 <h1>Authors</h1>
@@ -15,7 +24,7 @@
 {:then authors}
   <ul class="list">
     {#each authors as author (author.slug)}
-      {@const ids = author.books.map((b) => b.id)}
+      {@const ids = author.books.filter((b) => !isHidden(b.id)).map((b) => b.id)}
       <li>
         <a class="card" href={href('author', author.slug)}>
           <div class="covers" aria-hidden="true">
@@ -31,12 +40,15 @@
       </li>
     {/each}
   </ul>
+  <p class="muted hint">Looking for someone else? Search for any author at the top of the page.</p>
 {:catch error}
   <p>{error.message}</p>
 {/await}
 
 <style>
   h1 { font-size: 2rem; margin-bottom: 20px; }
+
+  .hint { margin-top: 24px; }
 
   .list {
     list-style: none;

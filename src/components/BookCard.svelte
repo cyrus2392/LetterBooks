@@ -1,15 +1,18 @@
 <script>
   import Cover from './Cover.svelte';
   import { href } from '../lib/router.svelte.js';
-  import { isRead, shelfOf } from '../lib/store.svelte.js';
+  import { isRead, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
   import { toggleRead } from '../lib/actions.js';
 
-  let { book, authorSlug } = $props();
+  // `editing` swaps the read tick for a hide/restore button; `label` is shown
+  // above the title (e.g. a series position).
+  let { book, authorSlug, editing = false, label = null } = $props();
   const read = $derived(isRead(book.id));
   const current = $derived(shelfOf(book.id));
+  const hidden = $derived(isHidden(book.id));
 </script>
 
-<article class:read>
+<article class:read class:hidden>
   <div class="cover">
     <a href={href('book', authorSlug, book.id)} aria-label="{book.title} ({book.year})">
       <Cover {book} />
@@ -19,16 +22,32 @@
     {:else if current === 'tbr'}
       <span class="shelf">Want to read</span>
     {/if}
-    <button
-      class="tick"
-      aria-pressed={read}
-      aria-label={read ? `Unmark ${book.title} as read` : `Mark ${book.title} as read`}
-      title={read ? 'Read (click to undo)' : 'Mark as read'}
-      onclick={() => toggleRead(book, authorSlug)}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-    </button>
+    {#if editing}
+      <button
+        class="tick hide"
+        aria-label={hidden ? `Restore ${book.title}` : `Hide ${book.title}`}
+        title={hidden ? 'Restore to the list' : "Hide: not a real book, or a duplicate"}
+        onclick={() => setHidden(book.id, !hidden)}
+      >
+        {#if hidden}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        {:else}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        {/if}
+      </button>
+    {:else}
+      <button
+        class="tick"
+        aria-pressed={read}
+        aria-label={read ? `Unmark ${book.title} as read` : `Mark ${book.title} as read`}
+        title={read ? 'Read (click to undo)' : 'Mark as read'}
+        onclick={() => toggleRead(book, authorSlug)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+      </button>
+    {/if}
   </div>
+  {#if label}<div class="label">{label}</div>{/if}
   <a class="title" href={href('book', authorSlug, book.id)}>{book.title}</a>
   <div class="year muted">{book.year}</div>
 </article>
@@ -123,4 +142,26 @@
   .title:hover { text-decoration: underline; }
 
   .year { font-size: 0.8rem; }
+
+  /* Edit mode: the hide/restore button is always visible. */
+  .tick.hide, .read .tick.hide {
+    opacity: 1;
+    background: rgb(0 0 0 / 0.7);
+    border-color: rgb(255 255 255 / 0.85);
+  }
+
+  .tick.hide svg, .read .tick.hide svg { stroke: white; }
+
+  .tick.hide:hover { background: #c0392b; }
+
+  .hidden .cover > a { opacity: 0.45; }
+
+  .label {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .label + .title { margin-top: 0; }
 </style>

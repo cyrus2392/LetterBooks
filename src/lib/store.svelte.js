@@ -9,6 +9,8 @@
 //     shelf: 'reading' | 'tbr' | null, shelvedOn,
 //     reads: [{ id, startedOn, finishedOn, rating, review, loggedAt }]
 //   }
+//   following[olAuthorKey] = { name, followedAt }   authors added from search
+//   hidden[bookId] = true                           not counted on author pages
 // Dates are local 'YYYY-MM-DD' strings; ratings are 0.5–5 in half steps.
 
 const KEY = 'letterbooks:v1';
@@ -17,15 +19,16 @@ const VERSION = 2;
 export const SHELVES = { reading: 'Currently reading', tbr: 'Want to read' };
 
 // v1 only stored quick ticks: { status: 'read', markedReadAt, title, authorSlug }.
+// following and hidden were added within version 2, so they may be missing.
 function migrate(saved) {
-  if (saved?.version === VERSION && saved.books) return saved;
+  if (saved?.version === VERSION && saved.books) return { following: {}, hidden: {}, ...saved };
   if (saved?.version === 1 && saved.books) {
     const books = {};
     for (const [id, b] of Object.entries(saved.books)) {
       if (b.status !== 'read') continue;
       books[id] = { title: b.title, authorSlug: b.authorSlug, quickRead: true, quickReadAt: b.markedReadAt, reads: [] };
     }
-    return { version: VERSION, books };
+    return { version: VERSION, books, following: {}, hidden: {} };
   }
   return null;
 }
@@ -37,7 +40,7 @@ function load() {
   } catch {
     // Unavailable or corrupt storage: start empty.
   }
-  return { version: VERSION, books: {} };
+  return { version: VERSION, books: {}, following: {}, hidden: {} };
 }
 
 const data = $state(load());
@@ -151,6 +154,31 @@ export function deleteRead(bookId, readId) {
   save();
 }
 
+// Followed authors (live ones added from search)
+
+export const isFollowing = (olKey) => !!data.following[olKey];
+
+export const followedAuthors = () =>
+  Object.entries(data.following)
+    .map(([olKey, a]) => ({ olKey, ...a }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+export function setFollowing(olKey, name, follow) {
+  if (follow) data.following[olKey] = { name, followedAt: new Date().toISOString() };
+  else delete data.following[olKey];
+  save();
+}
+
+// Hidden books: strays in an automatic bibliography (novellas, duplicates).
+
+export const isHidden = (bookId) => !!data.hidden[bookId];
+
+export function setHidden(bookId, hidden) {
+  if (hidden) data.hidden[bookId] = true;
+  else delete data.hidden[bookId];
+  save();
+}
+
 const clean = ({ startedOn, finishedOn, rating, review }) => ({
   startedOn: startedOn || null,
   finishedOn: finishedOn || null,
@@ -166,5 +194,7 @@ export function importData(json) {
   const parsed = migrate(JSON.parse(json));
   if (!parsed) throw new Error("That file isn't a LetterBooks export.");
   data.books = parsed.books;
+  data.following = parsed.following;
+  data.hidden = parsed.hidden;
   save();
 }

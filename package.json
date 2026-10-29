@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "import-author": "node scripts/import-author.mjs"
+    "import-author": "node scripts/import-author.mjs",
+    "add-author": "node scripts/add-author.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "7.3.1",

@@ -4,6 +4,7 @@
 // Usage: node scripts/import-author.mjs stephen-king
 
 import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { normalizeTitle as normalize } from '../src/lib/sources.js';
 
 const slug = process.argv[2];
 if (!slug) {
@@ -13,13 +14,6 @@ if (!slug) {
 
 const curation = JSON.parse(await readFile(`data/curation/${slug}.json`, 'utf8'));
 const UA = 'LetterBooks/0.1 (https://github.com/cyrus2392/LetterBooks)';
-
-const normalize = (s) =>
-  s.toLowerCase()
-    .replace(/[’‘]/g, "'")
-    .replace(/&/g, 'and')
-    .replace(/^(the|a|an) /, '')
-    .replace(/[^a-z0-9]/g, '');
 
 async function getJson(url) {
   for (let attempt = 1; ; attempt++) {
@@ -55,7 +49,8 @@ for (const book of curation.books) {
     title: book.title,
     year: book.year,
     type: book.type,
-    ...(book.series && { series: book.series }),
+    // Curation files may give one series object or a list; output is always a list.
+    ...(book.series && { series: [].concat(book.series) }),
     ...(book.coAuthors && { coAuthors: book.coAuthors }),
     ...(book.pseudonym && { pseudonym: book.pseudonym }),
     coverId: book.coverId ?? match?.cover_i ?? null,

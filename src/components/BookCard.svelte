@@ -1,10 +1,12 @@
 <script>
   import Cover from './Cover.svelte';
   import { href } from '../lib/router.svelte.js';
-  import { isRead, setRead } from '../lib/store.svelte.js';
+  import { isRead, shelfOf } from '../lib/store.svelte.js';
+  import { toggleRead } from '../lib/actions.js';
 
   let { book, authorSlug } = $props();
   const read = $derived(isRead(book.id));
+  const current = $derived(shelfOf(book.id));
 </script>
 
 <article class:read>
@@ -12,12 +14,17 @@
     <a href={href('book', authorSlug, book.id)} aria-label="{book.title} ({book.year})">
       <Cover {book} />
     </a>
+    {#if current === 'reading'}
+      <span class="shelf">Reading</span>
+    {:else if current === 'tbr'}
+      <span class="shelf">Want to read</span>
+    {/if}
     <button
       class="tick"
       aria-pressed={read}
       aria-label={read ? `Unmark ${book.title} as read` : `Mark ${book.title} as read`}
       title={read ? 'Read (click to undo)' : 'Mark as read'}
-      onclick={() => setRead(book, authorSlug, !read)}
+      onclick={() => toggleRead(book, authorSlug)}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
     </button>
@@ -43,6 +50,23 @@
   .read .cover > a {
     outline: 3px solid var(--accent);
     outline-offset: -3px;
+  }
+
+  .shelf {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 3px 6px;
+    border-radius: 0 0 4px 4px;
+    background: rgb(0 0 0 / 0.72);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    pointer-events: none;
   }
 
   .tick {

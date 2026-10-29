@@ -19,13 +19,13 @@ Letterboxd, but for books: log what you've read quickly and see your progress th
 ## Pages
 
 - **Author** (`#/author/stephen-king`): cover grid of every book (one entry per work, no editions), with "You've read X of Y (Z%)" and a progress bar. Each cover has a ✓ button to mark it read; read covers show a badge.
-- **Book** (`#/book/<work-id>`): cover, details, ✓ read toggle. Phase 2 adds TBR, currently reading, dated read logs, ratings and reviews.
-- **Profile** (`#/profile`): total books read, plus export/import of reading data.
+- **Book** (`#/book/<author>/<work-id>`): cover, details, read toggle, "Currently reading" and "Want to read" shelves, and logged reads (start/finish dates, half-star rating, review) with edit/delete.
+- **Profile** (`#/profile`): total books read, currently reading and want-to-read shelves, recent reads, and export/import of reading data.
 
 ## Phases
 
-1. **Stephen King end to end**: curated bibliography, author page, quick ✓, read count and percentage, profile total. ← current
-2. **Book page and full logging**: TBR, currently reading, read logs with dates, ratings, reviews.
+1. **Stephen King end to end**: curated bibliography, author page, quick ✓, read count and percentage, profile total. ✅
+2. **Book page and full logging**: TBR, currently reading, read logs with dates, ratings, reviews. ✅
 3. **More authors and series**: search (live Open Library lookups for untracked authors), adding authors, series pages and series progress.
 4. **Daily new releases**: scheduled GitHub Actions job checks tracked authors for new works, applies curation rules, commits updated data (which redeploys).
 5. **Accounts** (only if wanted): Supabase for sign-in and a database, behind the same store interface.

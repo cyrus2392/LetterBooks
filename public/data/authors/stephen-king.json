@@ -1,0 +1,761 @@
+{
+  "slug": "stephen-king",
+  "name": "Stephen King",
+  "olKey": "OL19981A",
+  "updatedAt": "2026-10-29",
+  "books": [
+    {
+      "id": "OL81626W",
+      "olWorkId": "OL81626W",
+      "title": "Carrie",
+      "year": 1974,
+      "type": "novel",
+      "coverId": 9256043
+    },
+    {
+      "id": "OL81632W",
+      "olWorkId": "OL81632W",
+      "title": "'Salem's Lot",
+      "year": 1975,
+      "type": "novel",
+      "coverId": 14654118
+    },
+    {
+      "id": "OL81633W",
+      "olWorkId": "OL81633W",
+      "title": "The Shining",
+      "year": 1977,
+      "type": "novel",
+      "series": {
+        "name": "The Shining",
+        "position": 1
+      },
+      "coverId": 12376585
+    },
+    {
+      "id": "OL149154W",
+      "olWorkId": "OL149154W",
+      "title": "Rage",
+      "year": 1977,
+      "type": "novel",
+      "pseudonym": "Richard Bachman",
+      "coverId": 8565707
+    },
+    {
+      "id": "OL81608W",
+      "olWorkId": "OL81608W",
+      "title": "Night Shift",
+      "year": 1978,
+      "type": "collection",
+      "coverId": 14651337
+    },
+    {
+      "id": "OL81618W",
+      "olWorkId": "OL81618W",
+      "title": "The Stand",
+      "year": 1978,
+      "type": "novel",
+      "coverId": 9255992
+    },
+    {
+      "id": "OL9973101W",
+      "olWorkId": "OL9973101W",
+      "title": "The Long Walk",
+      "year": 1979,
+      "type": "novel",
+      "pseudonym": "Richard Bachman",
+      "coverId": 14653609
+    },
+    {
+      "id": "OL81630W",
+      "olWorkId": "OL81630W",
+      "title": "The Dead Zone",
+      "year": 1979,
+      "type": "novel",
+      "coverId": 14653991
+    },
+    {
+      "id": "OL81623W",
+      "olWorkId": "OL81623W",
+      "title": "Firestarter",
+      "year": 1980,
+      "type": "novel",
+      "coverId": 12015446
+    },
+    {
+      "id": "OL81605W",
+      "olWorkId": "OL81605W",
+      "title": "Danse Macabre",
+      "year": 1981,
+      "type": "nonfiction",
+      "coverId": 8443662
+    },
+    {
+      "id": "OL149102W",
+      "olWorkId": "OL149102W",
+      "title": "Roadwork",
+      "year": 1981,
+      "type": "novel",
+      "pseudonym": "Richard Bachman",
+      "coverId": 14651941
+    },
+    {
+      "id": "OL81610W",
+      "olWorkId": "OL81610W",
+      "title": "Cujo",
+      "year": 1981,
+      "type": "novel",
+      "coverId": 8570003
+    },
+    {
+      "id": "OL149188W",
+      "olWorkId": "OL149188W",
+      "title": "The Running Man",
+      "year": 1982,
+      "type": "novel",
+      "pseudonym": "Richard Bachman",
+      "coverId": 14651762
+    },
+    {
+      "id": "OL81628W",
+      "olWorkId": "OL81628W",
+      "title": "The Gunslinger",
+      "year": 1982,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 1
+      },
+      "coverId": 8396638
+    },
+    {
+      "id": "OL81621W",
+      "olWorkId": "OL81621W",
+      "title": "Different Seasons",
+      "year": 1982,
+      "type": "collection",
+      "coverId": 14655761
+    },
+    {
+      "id": "OL81619W",
+      "olWorkId": "OL81619W",
+      "title": "Christine",
+      "year": 1983,
+      "type": "novel",
+      "coverId": 14655985
+    },
+    {
+      "id": "OL81631W",
+      "olWorkId": "OL81631W",
+      "title": "Pet Sematary",
+      "year": 1983,
+      "type": "novel",
+      "coverId": 12015500
+    },
+    {
+      "id": "OL81583W",
+      "olWorkId": "OL81583W",
+      "title": "Cycle of the Werewolf",
+      "year": 1983,
+      "type": "novel",
+      "coverId": 14651552
+    },
+    {
+      "id": "OL81599W",
+      "olWorkId": "OL81599W",
+      "title": "The Talisman",
+      "year": 1984,
+      "type": "novel",
+      "series": {
+        "name": "The Talisman",
+        "position": 1
+      },
+      "coAuthors": [
+        "Peter Straub"
+      ],
+      "coverId": 14651566
+    },
+    {
+      "id": "OL149210W",
+      "olWorkId": "OL149210W",
+      "title": "Thinner",
+      "year": 1984,
+      "type": "novel",
+      "pseudonym": "Richard Bachman",
+      "coverId": 8274288
+    },
+    {
+      "id": "OL81627W",
+      "olWorkId": "OL81627W",
+      "title": "Skeleton Crew",
+      "year": 1985,
+      "type": "collection",
+      "coverId": 14657166
+    },
+    {
+      "id": "OL81613W",
+      "olWorkId": "OL81613W",
+      "title": "It",
+      "year": 1986,
+      "type": "novel",
+      "coverId": 8569284
+    },
+    {
+      "id": "OL81602W",
+      "olWorkId": "OL81602W",
+      "title": "The Eyes of the Dragon",
+      "year": 1987,
+      "type": "novel",
+      "coverId": 8524085
+    },
+    {
+      "id": "OL81616W",
+      "olWorkId": "OL81616W",
+      "title": "The Drawing of the Three",
+      "year": 1987,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 2
+      },
+      "coverId": 14651245
+    },
+    {
+      "id": "OL81634W",
+      "olWorkId": "OL81634W",
+      "title": "Misery",
+      "year": 1987,
+      "type": "novel",
+      "coverId": 8259296
+    },
+    {
+      "id": "OL81593W",
+      "olWorkId": "OL81593W",
+      "title": "The Tommyknockers",
+      "year": 1987,
+      "type": "novel",
+      "coverId": 6997458
+    },
+    {
+      "id": "OL81620W",
+      "olWorkId": "OL81620W",
+      "title": "The Dark Half",
+      "year": 1989,
+      "type": "novel",
+      "coverId": 8530409
+    },
+    {
+      "id": "OL81606W",
+      "olWorkId": "OL81606W",
+      "title": "Four Past Midnight",
+      "year": 1990,
+      "type": "collection",
+      "coverId": 8413143
+    },
+    {
+      "id": "OL81607W",
+      "olWorkId": "OL81607W",
+      "title": "Needful Things",
+      "year": 1991,
+      "type": "novel",
+      "coverId": 8404327
+    },
+    {
+      "id": "OL81625W",
+      "olWorkId": "OL81625W",
+      "title": "The Waste Lands",
+      "year": 1991,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 3
+      },
+      "coverId": 8443630
+    },
+    {
+      "id": "OL81617W",
+      "olWorkId": "OL81617W",
+      "title": "Gerald's Game",
+      "year": 1992,
+      "type": "novel",
+      "coverId": 10705875
+    },
+    {
+      "id": "OL81622W",
+      "olWorkId": "OL81622W",
+      "title": "Dolores Claiborne",
+      "year": 1992,
+      "type": "novel",
+      "coverId": 9255997
+    },
+    {
+      "id": "OL81604W",
+      "olWorkId": "OL81604W",
+      "title": "Nightmares & Dreamscapes",
+      "year": 1993,
+      "type": "collection",
+      "coverId": 14654718
+    },
+    {
+      "id": "OL81603W",
+      "olWorkId": "OL81603W",
+      "title": "Insomnia",
+      "year": 1994,
+      "type": "novel",
+      "coverId": 7886954
+    },
+    {
+      "id": "OL81614W",
+      "olWorkId": "OL81614W",
+      "title": "Rose Madder",
+      "year": 1995,
+      "type": "novel",
+      "coverId": 8578049
+    },
+    {
+      "id": "OL81629W",
+      "olWorkId": "OL81629W",
+      "title": "The Green Mile",
+      "year": 1996,
+      "type": "novel",
+      "coverId": 9334567
+    },
+    {
+      "id": "OL81611W",
+      "olWorkId": "OL81611W",
+      "title": "Desperation",
+      "year": 1996,
+      "type": "novel",
+      "coverId": 8757374
+    },
+    {
+      "id": "OL2794726W",
+      "olWorkId": "OL2794726W",
+      "title": "The Regulators",
+      "year": 1996,
+      "type": "novel",
+      "pseudonym": "Richard Bachman",
+      "coverId": 14651906
+    },
+    {
+      "id": "OL81615W",
+      "olWorkId": "OL81615W",
+      "title": "Wizard and Glass",
+      "year": 1997,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 4
+      },
+      "coverId": 14657088
+    },
+    {
+      "id": "OL81609W",
+      "olWorkId": "OL81609W",
+      "title": "Bag of Bones",
+      "year": 1998,
+      "type": "novel",
+      "coverId": 14653458
+    },
+    {
+      "id": "OL81612W",
+      "olWorkId": "OL81612W",
+      "title": "The Girl Who Loved Tom Gordon",
+      "year": 1999,
+      "type": "novel",
+      "coverId": 14653580
+    },
+    {
+      "id": "OL81624W",
+      "olWorkId": "OL81624W",
+      "title": "Hearts in Atlantis",
+      "year": 1999,
+      "type": "collection",
+      "coverId": 8536326
+    },
+    {
+      "id": "OL81601W",
+      "olWorkId": "OL81601W",
+      "title": "On Writing",
+      "year": 2000,
+      "type": "nonfiction",
+      "coverId": 9255939
+    },
+    {
+      "id": "OL81598W",
+      "olWorkId": "OL81598W",
+      "title": "Dreamcatcher",
+      "year": 2001,
+      "type": "novel",
+      "coverId": 14651654
+    },
+    {
+      "id": "OL81596W",
+      "olWorkId": "OL81596W",
+      "title": "Black House",
+      "year": 2001,
+      "type": "novel",
+      "series": {
+        "name": "The Talisman",
+        "position": 2
+      },
+      "coAuthors": [
+        "Peter Straub"
+      ],
+      "coverId": 14652973
+    },
+    {
+      "id": "OL81586W",
+      "olWorkId": "OL81586W",
+      "title": "From a Buick 8",
+      "year": 2002,
+      "type": "novel",
+      "coverId": 6502777
+    },
+    {
+      "id": "OL81584W",
+      "olWorkId": "OL81584W",
+      "title": "Everything's Eventual",
+      "year": 2002,
+      "type": "collection",
+      "coverId": 8585782
+    },
+    {
+      "id": "OL81594W",
+      "olWorkId": "OL81594W",
+      "title": "Wolves of the Calla",
+      "year": 2003,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 5
+      },
+      "coverId": 14652470
+    },
+    {
+      "id": "OL149200W",
+      "olWorkId": "OL149200W",
+      "title": "Song of Susannah",
+      "year": 2004,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 6
+      },
+      "coverId": 8393691
+    },
+    {
+      "id": "OL81600W",
+      "olWorkId": "OL81600W",
+      "title": "The Dark Tower",
+      "year": 2004,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 7
+      },
+      "coverId": 14656148
+    },
+    {
+      "id": "OL14916794W",
+      "olWorkId": "OL14916794W",
+      "title": "Faithful",
+      "year": 2004,
+      "type": "nonfiction",
+      "coAuthors": [
+        "Stewart O'Nan"
+      ],
+      "coverId": 8288251
+    },
+    {
+      "id": "OL149171W",
+      "olWorkId": "OL149171W",
+      "title": "The Colorado Kid",
+      "year": 2005,
+      "type": "novel",
+      "coverId": 8380883
+    },
+    {
+      "id": "OL81597W",
+      "olWorkId": "OL81597W",
+      "title": "Cell",
+      "year": 2006,
+      "type": "novel",
+      "coverId": 14654054
+    },
+    {
+      "id": "OL81589W",
+      "olWorkId": "OL81589W",
+      "title": "Lisey's Story",
+      "year": 2006,
+      "type": "novel",
+      "coverId": 8387657
+    },
+    {
+      "id": "OL2794739W",
+      "olWorkId": "OL2794739W",
+      "title": "Blaze",
+      "year": 2007,
+      "type": "novel",
+      "pseudonym": "Richard Bachman",
+      "coverId": 14652676
+    },
+    {
+      "id": "OL149119W",
+      "olWorkId": "OL149119W",
+      "title": "Duma Key",
+      "year": 2008,
+      "type": "novel",
+      "coverId": 14652203
+    },
+    {
+      "id": "OL81588W",
+      "olWorkId": "OL81588W",
+      "title": "Just After Sunset",
+      "year": 2008,
+      "type": "collection",
+      "coverId": 8494916
+    },
+    {
+      "id": "OL14917748W",
+      "olWorkId": "OL14917748W",
+      "title": "Under the Dome",
+      "year": 2009,
+      "type": "novel",
+      "coverId": 14651549
+    },
+    {
+      "id": "OL15374110W",
+      "olWorkId": "OL15374110W",
+      "title": "Full Dark, No Stars",
+      "year": 2010,
+      "type": "collection",
+      "coverId": 12018685
+    },
+    {
+      "id": "OL16002468W",
+      "olWorkId": "OL16002468W",
+      "title": "11/22/63",
+      "year": 2011,
+      "type": "novel",
+      "coverId": 10713447
+    },
+    {
+      "id": "OL16451416W",
+      "olWorkId": "OL16451416W",
+      "title": "The Wind Through the Keyhole",
+      "year": 2012,
+      "type": "novel",
+      "series": {
+        "name": "The Dark Tower",
+        "position": 4.5
+      },
+      "coverId": 14653576
+    },
+    {
+      "id": "OL16806826W",
+      "olWorkId": "OL16806826W",
+      "title": "Joyland",
+      "year": 2013,
+      "type": "novel",
+      "coverId": 9154939
+    },
+    {
+      "id": "OL16806877W",
+      "olWorkId": "OL16806877W",
+      "title": "Doctor Sleep",
+      "year": 2013,
+      "type": "novel",
+      "series": {
+        "name": "The Shining",
+        "position": 2
+      },
+      "coverId": 14652972
+    },
+    {
+      "id": "OL16820059W",
+      "olWorkId": "OL16820059W",
+      "title": "Mr. Mercedes",
+      "year": 2014,
+      "type": "novel",
+      "series": {
+        "name": "Bill Hodges",
+        "position": 1
+      },
+      "coverId": 14653120
+    },
+    {
+      "id": "OL17200413W",
+      "olWorkId": "OL17200413W",
+      "title": "Revival",
+      "year": 2014,
+      "type": "novel",
+      "coverId": 14652892
+    },
+    {
+      "id": "OL17333186W",
+      "olWorkId": "OL17333186W",
+      "title": "Finders Keepers",
+      "year": 2015,
+      "type": "novel",
+      "series": {
+        "name": "Bill Hodges",
+        "position": 2
+      },
+      "coverId": 8339525
+    },
+    {
+      "id": "OL17823750W",
+      "olWorkId": "OL17823750W",
+      "title": "The Bazaar of Bad Dreams",
+      "year": 2015,
+      "type": "collection",
+      "coverId": 12018432
+    },
+    {
+      "id": "OL17357373W",
+      "olWorkId": "OL17357373W",
+      "title": "End of Watch",
+      "year": 2016,
+      "type": "novel",
+      "series": {
+        "name": "Bill Hodges",
+        "position": 3
+      },
+      "coverId": 12376085
+    },
+    {
+      "id": "OL18092161W",
+      "olWorkId": "OL18092161W",
+      "title": "Gwendy's Button Box",
+      "year": 2017,
+      "type": "novel",
+      "series": {
+        "name": "Gwendy",
+        "position": 1
+      },
+      "coAuthors": [
+        "Richard Chizmar"
+      ],
+      "coverId": 9325640
+    },
+    {
+      "id": "OL17930363W",
+      "olWorkId": "OL17930363W",
+      "title": "Sleeping Beauties",
+      "year": 2017,
+      "type": "novel",
+      "coAuthors": [
+        "Owen King"
+      ],
+      "coverId": 10713424
+    },
+    {
+      "id": "OL17937105W",
+      "olWorkId": "OL17937105W",
+      "title": "The Outsider",
+      "year": 2018,
+      "type": "novel",
+      "series": {
+        "name": "Holly Gibney",
+        "position": 1
+      },
+      "coverId": 11412999
+    },
+    {
+      "id": "OL18021898W",
+      "olWorkId": "OL18021898W",
+      "title": "Elevation",
+      "year": 2018,
+      "type": "novel",
+      "coverId": 12376066
+    },
+    {
+      "id": "OL20126932W",
+      "olWorkId": "OL20126932W",
+      "title": "The Institute",
+      "year": 2019,
+      "type": "novel",
+      "coverId": 10712767
+    },
+    {
+      "id": "OL20663157W",
+      "olWorkId": "OL20663157W",
+      "title": "If It Bleeds",
+      "year": 2020,
+      "type": "collection",
+      "coverId": 14654512
+    },
+    {
+      "id": "OL21229708W",
+      "olWorkId": "OL21229708W",
+      "title": "Later",
+      "year": 2021,
+      "type": "novel",
+      "coverId": 14654000
+    },
+    {
+      "id": "OL24229351W",
+      "olWorkId": "OL24229351W",
+      "title": "Billy Summers",
+      "year": 2021,
+      "type": "novel",
+      "coverId": 14654070
+    },
+    {
+      "id": "OL24790867W",
+      "olWorkId": "OL24790867W",
+      "title": "Gwendy's Final Task",
+      "year": 2022,
+      "type": "novel",
+      "series": {
+        "name": "Gwendy",
+        "position": 3
+      },
+      "coAuthors": [
+        "Richard Chizmar"
+      ],
+      "coverId": 14655224
+    },
+    {
+      "id": "OL27589863W",
+      "olWorkId": "OL27589863W",
+      "title": "Fairy Tale",
+      "year": 2022,
+      "type": "novel",
+      "coverId": 14655682
+    },
+    {
+      "id": "OL34057778W",
+      "olWorkId": "OL34057778W",
+      "title": "Holly",
+      "year": 2023,
+      "type": "novel",
+      "series": {
+        "name": "Holly Gibney",
+        "position": 2
+      },
+      "coverId": 14655773
+    },
+    {
+      "id": "OL36914473W",
+      "olWorkId": "OL36914473W",
+      "title": "You Like It Darker",
+      "year": 2024,
+      "type": "collection",
+      "coverId": 14544172
+    },
+    {
+      "id": "OL41942876W",
+      "olWorkId": "OL41942876W",
+      "title": "Never Flinch",
+      "year": 2025,
+      "type": "novel",
+      "series": {
+        "name": "Holly Gibney",
+        "position": 3
+      },
+      "coverId": 14825714
+    }
+  ]
+}

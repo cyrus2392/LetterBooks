@@ -1,10 +1,11 @@
 // Matches a curated bibliography (data/curation/<slug>.json) to Open Library
-// works and writes public/data/authors/<slug>.json plus the authors index.
+// works, picks a UK edition's cover for each, and writes
+// public/data/authors/<slug>.json plus the authors index.
 //
 // Usage: node scripts/import-author.mjs stephen-king
 
 import { readFile, writeFile, readdir } from 'node:fs/promises';
-import { normalizeTitle as normalize } from '../src/lib/sources.js';
+import { normalizeTitle as normalize, matchWork, fetchUkCover } from '../src/lib/sources.js';
 
 const slug = process.argv[2];
 if (!slug) {
@@ -33,12 +34,7 @@ const { docs } = await getJson(
 const books = [];
 const unmatched = [];
 for (const book of curation.books) {
-  const target = normalize(book.title);
-  const candidates = book.olKey
-    ? docs.filter((d) => d.key === `/works/${book.olKey}`)
-    : docs.filter((d) => normalize(d.title) === target);
-  // The most-published matching work is the canonical one; the rest are duplicates.
-  const match = candidates.sort((a, b) => (b.edition_count ?? 0) - (a.edition_count ?? 0))[0];
+  const match = book.olKey ? docs.find((d) => d.key === `/works/${book.olKey}`) : matchWork(book.title, docs);
   if (!match) unmatched.push(book.title);
 
   const workId = match ? match.key.replace('/works/', '') : null;
@@ -54,8 +50,21 @@ for (const book of curation.books) {
     ...(book.coAuthors && { coAuthors: book.coAuthors }),
     ...(book.pseudonym && { pseudonym: book.pseudonym }),
     coverId: book.coverId ?? match?.cover_i ?? null,
+    // 'manual' (set in curation), 'uk' (a UK edition's cover) or 'default' (the work's own cover).
+    coverRegion: book.coverId ? 'manual' : 'default',
   });
 }
+
+// Swap in UK covers, a few requests at a time.
+const pending = books.filter((b) => b.olWorkId && b.coverRegion === 'default');
+await Promise.all(
+  Array.from({ length: 4 }, async () => {
+    for (let b; (b = pending.shift()); ) {
+      const uk = await fetchUkCover(b.olWorkId).catch(() => null);
+      if (uk) Object.assign(b, { coverId: uk, coverRegion: 'uk' });
+    }
+  }),
+);
 
 const out = {
   slug,
@@ -76,6 +85,6 @@ for (const file of (await readdir('public/data/authors')).sort()) {
 await writeFile('public/data/authors.json', JSON.stringify(index, null, 2) + '\n');
 
 const noCover = books.filter((b) => !b.coverId).map((b) => b.title);
-console.log(`${curation.name}: ${books.length} books, ${books.length - unmatched.length} matched to Open Library`);
+console.log(`${curation.name}: ${books.length} books, ${books.length - unmatched.length} matched to Open Library, ${books.filter((b) => b.coverRegion === 'uk').length} with UK covers`);
 if (unmatched.length) console.log(`Unmatched (add olKey in curation): ${unmatched.join(', ')}`);
 if (noCover.length) console.log(`No cover (add coverId in curation): ${noCover.join(', ')}`);

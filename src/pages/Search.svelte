@@ -95,7 +95,7 @@
       <p class="muted">Searching…</p>
     {:then results}
       {@const localIds = new Set(local.books.map((b) => b.id))}
-      {@const fresh = results.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, authorRef: b.authorKey }))}
+      {@const fresh = results.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, olWorkId: b.id, authorRef: b.authorKey }))}
       {#if fresh.length}
         {@render bookList(fresh)}
       {:else}

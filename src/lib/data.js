@@ -1,12 +1,14 @@
 // Book data. Curated authors are static JSON under public/data (built by
-// scripts/import-author.mjs); any other author is built live from Open
-// Library + Wikidata and cached in the browser for a week.
+// scripts/import-author.mjs); any other author is built live from
+// Wikipedia + Open Library + Wikidata and cached in the browser for a week.
 
-import { buildAuthor, isOlAuthorKey, fetchWork } from './sources.js';
+import { buildAuthor, isOlAuthorKey, fetchWork, fetchUkCover } from './sources.js';
 
 const base = import.meta.env.BASE_URL;
 const cache = new Map();
-const LIVE_TTL = 7 * 24 * 60 * 60 * 1000;
+const DAY = 24 * 60 * 60 * 1000;
+const LIVE_TTL = 7 * DAY;
+const COVER_TTL = 30 * DAY;
 
 function memo(key, load) {
   if (!cache.has(key)) {
@@ -31,7 +33,8 @@ export const getAuthors = () => getJson('authors.json');
 
 function getLiveAuthor(olKey) {
   return memo(`live:${olKey}`, async () => {
-    const storageKey = `letterbooks:cache:author:${olKey}`;
+    // v2: bibliographies moved to Wikipedia; older cached lists are ignored.
+    const storageKey = `letterbooks:cache:author-v2:${olKey}`;
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey));
       if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) return saved.author;
@@ -39,10 +42,13 @@ function getLiveAuthor(olKey) {
       // No usable cache; fetch below.
     }
     const author = await buildAuthor(olKey);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify({ fetchedAt: Date.now(), author }));
-    } catch {
-      // Storage full or unavailable; it just won't be cached.
+    // A fallback caused by Wikipedia being unreachable shouldn't stick for a week.
+    if (!author.source.temporary) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ fetchedAt: Date.now(), author }));
+      } catch {
+        // Storage full or unavailable; it just won't be cached.
+      }
     }
     return author;
   });
@@ -90,4 +96,56 @@ export function seriesOf(author) {
 export const coverUrl = (coverId, size = 'M') =>
   coverId ? `https://covers.openlibrary.org/b/id/${coverId}-${size}.jpg` : null;
 
-export const TYPE_LABELS = { novel: 'Novel', collection: 'Collection', nonfiction: 'Non-fiction' };
+export const TYPE_LABELS = { novel: 'Novel', collection: 'Collection', nonfiction: 'Non-fiction', children: "Children's book" };
+
+// UK covers. Curated books have theirs picked at import time (coverRegion is
+// set); for live authors each cover is looked up on first display, a few at
+// a time, and remembered for a month. Resolves to a cover id, or null to use
+// the book's default cover.
+
+const COVERS_KEY = 'letterbooks:cache:uk-covers';
+let ukCovers;
+function savedUkCovers() {
+  if (!ukCovers) {
+    try {
+      ukCovers = JSON.parse(localStorage.getItem(COVERS_KEY)) ?? {};
+    } catch {
+      ukCovers = {};
+    }
+  }
+  return ukCovers;
+}
+
+const queue = [];
+let active = 0;
+function limited(task) {
+  return new Promise((resolve, reject) => {
+    queue.push(() => task().then(resolve, reject));
+    pump();
+  });
+}
+function pump() {
+  while (active < 4 && queue.length) {
+    active++;
+    queue.shift()().finally(() => {
+      active--;
+      pump();
+    });
+  }
+}
+
+export function ukCoverId(workId) {
+  const saved = savedUkCovers()[workId];
+  if (saved && Date.now() - saved.at < COVER_TTL) return Promise.resolve(saved.id);
+  return memo(`uk:${workId}`, () =>
+    limited(() => fetchUkCover(workId)).then((id) => {
+      savedUkCovers()[workId] = { id, at: Date.now() };
+      try {
+        localStorage.setItem(COVERS_KEY, JSON.stringify(ukCovers));
+      } catch {
+        // Not cached; it'll be looked up again next time.
+      }
+      return id;
+    }),
+  );
+}

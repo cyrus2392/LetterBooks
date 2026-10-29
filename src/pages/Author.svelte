@@ -43,10 +43,15 @@
     <div class="progress"><Progress read={readCount(ids)} total={ids.length} /></div>
   </section>
 
-  {#if author.live}
+  {#if author.live && author.source?.name === 'Wikipedia'}
     <p class="notice">
-      This list was built automatically from Open Library, so it may include novellas, short stories or duplicates.
+      This list comes from Wikipedia's <a href={author.source.url} target="_blank" rel="noopener">{author.source.title}</a>.
       Use <strong>Edit list</strong> to hide anything that shouldn't count.
+    </p>
+  {:else if author.live}
+    <p class="notice">
+      Wikipedia doesn't have a bibliography for {author.name}, so this list was built automatically from Open Library and
+      may include novellas, short stories or duplicates. Use <strong>Edit list</strong> to hide anything that shouldn't count.
     </p>
   {/if}
   {#if editing}

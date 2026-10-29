@@ -10,7 +10,8 @@
       "title": "Carrie",
       "year": 1974,
       "type": "novel",
-      "coverId": 9256043
+      "coverId": 15255731,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81632W",
@@ -18,7 +19,8 @@
       "title": "'Salem's Lot",
       "year": 1975,
       "type": "novel",
-      "coverId": 14654118
+      "coverId": 15255779,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81633W",
@@ -32,7 +34,8 @@
           "position": 1
         }
       ],
-      "coverId": 12376585
+      "coverId": 14654031,
+      "coverRegion": "uk"
     },
     {
       "id": "OL149154W",
@@ -41,7 +44,8 @@
       "year": 1977,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 8565707
+      "coverId": 8565707,
+      "coverRegion": "default"
     },
     {
       "id": "OL81608W",
@@ -49,7 +53,8 @@
       "title": "Night Shift",
       "year": 1978,
       "type": "collection",
-      "coverId": 14651337
+      "coverId": 10145920,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81618W",
@@ -57,7 +62,8 @@
       "title": "The Stand",
       "year": 1978,
       "type": "novel",
-      "coverId": 9255992
+      "coverId": 15253669,
+      "coverRegion": "uk"
     },
     {
       "id": "OL9973101W",
@@ -66,7 +72,8 @@
       "year": 1979,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 14653609
+      "coverId": 15123505,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81630W",
@@ -74,7 +81,8 @@
       "title": "The Dead Zone",
       "year": 1979,
       "type": "novel",
-      "coverId": 14653991
+      "coverId": 8668255,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81623W",
@@ -82,7 +90,8 @@
       "title": "Firestarter",
       "year": 1980,
       "type": "novel",
-      "coverId": 12015446
+      "coverId": 14654014,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81605W",
@@ -90,7 +99,8 @@
       "title": "Danse Macabre",
       "year": 1981,
       "type": "nonfiction",
-      "coverId": 8443662
+      "coverId": 14652880,
+      "coverRegion": "uk"
     },
     {
       "id": "OL149102W",
@@ -99,7 +109,8 @@
       "year": 1981,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 14651941
+      "coverId": 14651941,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81610W",
@@ -107,7 +118,8 @@
       "title": "Cujo",
       "year": 1981,
       "type": "novel",
-      "coverId": 8570003
+      "coverId": 12108424,
+      "coverRegion": "uk"
     },
     {
       "id": "OL149188W",
@@ -116,7 +128,8 @@
       "year": 1982,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 14651762
+      "coverId": 12412351,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81628W",
@@ -130,7 +143,8 @@
           "position": 1
         }
       ],
-      "coverId": 8396638
+      "coverId": 14546623,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81621W",
@@ -138,7 +152,8 @@
       "title": "Different Seasons",
       "year": 1982,
       "type": "collection",
-      "coverId": 14655761
+      "coverId": 8665145,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81619W",
@@ -146,7 +161,8 @@
       "title": "Christine",
       "year": 1983,
       "type": "novel",
-      "coverId": 14655985
+      "coverId": 8309510,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81631W",
@@ -154,7 +170,8 @@
       "title": "Pet Sematary",
       "year": 1983,
       "type": "novel",
-      "coverId": 12015500
+      "coverId": 12347428,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81583W",
@@ -162,7 +179,8 @@
       "title": "Cycle of the Werewolf",
       "year": 1983,
       "type": "novel",
-      "coverId": 14651552
+      "coverId": 291371,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81599W",
@@ -179,7 +197,8 @@
       "coAuthors": [
         "Peter Straub"
       ],
-      "coverId": 14651566
+      "coverId": 15253694,
+      "coverRegion": "uk"
     },
     {
       "id": "OL149210W",
@@ -188,7 +207,8 @@
       "year": 1984,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 8274288
+      "coverId": 14654165,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81627W",
@@ -196,7 +216,8 @@
       "title": "Skeleton Crew",
       "year": 1985,
       "type": "collection",
-      "coverId": 14657166
+      "coverId": 15214558,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81613W",
@@ -204,7 +225,8 @@
       "title": "It",
       "year": 1986,
       "type": "novel",
-      "coverId": 8569284
+      "coverId": 15255912,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81602W",
@@ -212,7 +234,8 @@
       "title": "The Eyes of the Dragon",
       "year": 1987,
       "type": "novel",
-      "coverId": 8524085
+      "coverId": 11302139,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81616W",
@@ -226,7 +249,8 @@
           "position": 2
         }
       ],
-      "coverId": 14651245
+      "coverId": 14546626,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81634W",
@@ -234,7 +258,8 @@
       "title": "Misery",
       "year": 1987,
       "type": "novel",
-      "coverId": 8259296
+      "coverId": 14656010,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81593W",
@@ -242,7 +267,17 @@
       "title": "The Tommyknockers",
       "year": 1987,
       "type": "novel",
-      "coverId": 6997458
+      "coverId": 8792499,
+      "coverRegion": "uk"
+    },
+    {
+      "id": "OL14917376W",
+      "olWorkId": "OL14917376W",
+      "title": "Nightmares in the Sky",
+      "year": 1988,
+      "type": "nonfiction",
+      "coverId": 7092369,
+      "coverRegion": "default"
     },
     {
       "id": "OL81620W",
@@ -250,7 +285,8 @@
       "title": "The Dark Half",
       "year": 1989,
       "type": "novel",
-      "coverId": 8530409
+      "coverId": 8668007,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81606W",
@@ -258,7 +294,8 @@
       "title": "Four Past Midnight",
       "year": 1990,
       "type": "collection",
-      "coverId": 8413143
+      "coverId": 14721378,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81607W",
@@ -266,7 +303,8 @@
       "title": "Needful Things",
       "year": 1991,
       "type": "novel",
-      "coverId": 8404327
+      "coverId": 10549310,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81625W",
@@ -280,7 +318,8 @@
           "position": 3
         }
       ],
-      "coverId": 8443630
+      "coverId": 14546628,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81617W",
@@ -288,7 +327,8 @@
       "title": "Gerald's Game",
       "year": 1992,
       "type": "novel",
-      "coverId": 10705875
+      "coverId": 14657013,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81622W",
@@ -296,7 +336,8 @@
       "title": "Dolores Claiborne",
       "year": 1992,
       "type": "novel",
-      "coverId": 9255997
+      "coverId": 14655033,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81604W",
@@ -304,7 +345,8 @@
       "title": "Nightmares & Dreamscapes",
       "year": 1993,
       "type": "collection",
-      "coverId": 14654718
+      "coverId": 8756854,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81603W",
@@ -312,7 +354,8 @@
       "title": "Insomnia",
       "year": 1994,
       "type": "novel",
-      "coverId": 7886954
+      "coverId": 10548142,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81614W",
@@ -320,7 +363,8 @@
       "title": "Rose Madder",
       "year": 1995,
       "type": "novel",
-      "coverId": 8578049
+      "coverId": 14654572,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81629W",
@@ -328,7 +372,8 @@
       "title": "The Green Mile",
       "year": 1996,
       "type": "novel",
-      "coverId": 9334567
+      "coverId": 15259261,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81611W",
@@ -336,7 +381,8 @@
       "title": "Desperation",
       "year": 1996,
       "type": "novel",
-      "coverId": 8757374
+      "coverId": 11627656,
+      "coverRegion": "uk"
     },
     {
       "id": "OL2794726W",
@@ -345,7 +391,8 @@
       "year": 1996,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 14651906
+      "coverId": 11415857,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81615W",
@@ -359,7 +406,8 @@
           "position": 4
         }
       ],
-      "coverId": 14657088
+      "coverId": 14546631,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81609W",
@@ -367,7 +415,8 @@
       "title": "Bag of Bones",
       "year": 1998,
       "type": "novel",
-      "coverId": 14653458
+      "coverId": 14654047,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81612W",
@@ -375,7 +424,8 @@
       "title": "The Girl Who Loved Tom Gordon",
       "year": 1999,
       "type": "novel",
-      "coverId": 14653580
+      "coverId": 15254982,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81624W",
@@ -383,7 +433,8 @@
       "title": "Hearts in Atlantis",
       "year": 1999,
       "type": "collection",
-      "coverId": 8536326
+      "coverId": 8668725,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81601W",
@@ -391,7 +442,17 @@
       "title": "On Writing",
       "year": 2000,
       "type": "nonfiction",
-      "coverId": 9255939
+      "coverId": 15258947,
+      "coverRegion": "uk"
+    },
+    {
+      "id": "OL19860533W",
+      "olWorkId": "OL19860533W",
+      "title": "Secret Windows",
+      "year": 2000,
+      "type": "nonfiction",
+      "coverId": 8666991,
+      "coverRegion": "default"
     },
     {
       "id": "OL81598W",
@@ -399,7 +460,8 @@
       "title": "Dreamcatcher",
       "year": 2001,
       "type": "novel",
-      "coverId": 14651654
+      "coverId": 14652854,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81596W",
@@ -416,7 +478,8 @@
       "coAuthors": [
         "Peter Straub"
       ],
-      "coverId": 14652973
+      "coverId": 15253696,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81586W",
@@ -424,7 +487,8 @@
       "title": "From a Buick 8",
       "year": 2002,
       "type": "novel",
-      "coverId": 6502777
+      "coverId": 14797255,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81584W",
@@ -432,7 +496,8 @@
       "title": "Everything's Eventual",
       "year": 2002,
       "type": "collection",
-      "coverId": 8585782
+      "coverId": 15254985,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81594W",
@@ -446,7 +511,8 @@
           "position": 5
         }
       ],
-      "coverId": 14652470
+      "coverId": 15249904,
+      "coverRegion": "uk"
     },
     {
       "id": "OL149200W",
@@ -460,7 +526,8 @@
           "position": 6
         }
       ],
-      "coverId": 8393691
+      "coverId": 15254413,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81600W",
@@ -474,7 +541,8 @@
           "position": 7
         }
       ],
-      "coverId": 14656148
+      "coverId": 15254470,
+      "coverRegion": "uk"
     },
     {
       "id": "OL14916794W",
@@ -485,7 +553,8 @@
       "coAuthors": [
         "Stewart O'Nan"
       ],
-      "coverId": 8288251
+      "coverId": 2353363,
+      "coverRegion": "uk"
     },
     {
       "id": "OL149171W",
@@ -493,7 +562,8 @@
       "title": "The Colorado Kid",
       "year": 2005,
       "type": "novel",
-      "coverId": 8380883
+      "coverId": 14653573,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81597W",
@@ -501,7 +571,8 @@
       "title": "Cell",
       "year": 2006,
       "type": "novel",
-      "coverId": 14654054
+      "coverId": 14652706,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81589W",
@@ -509,7 +580,8 @@
       "title": "Lisey's Story",
       "year": 2006,
       "type": "novel",
-      "coverId": 8387657
+      "coverId": 14654027,
+      "coverRegion": "uk"
     },
     {
       "id": "OL2794739W",
@@ -518,7 +590,8 @@
       "year": 2007,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 14652676
+      "coverId": 10358247,
+      "coverRegion": "uk"
     },
     {
       "id": "OL149119W",
@@ -526,7 +599,8 @@
       "title": "Duma Key",
       "year": 2008,
       "type": "novel",
-      "coverId": 14652203
+      "coverId": 14740869,
+      "coverRegion": "uk"
     },
     {
       "id": "OL81588W",
@@ -534,7 +608,8 @@
       "title": "Just After Sunset",
       "year": 2008,
       "type": "collection",
-      "coverId": 8494916
+      "coverId": 10191710,
+      "coverRegion": "uk"
     },
     {
       "id": "OL14917748W",
@@ -542,7 +617,8 @@
       "title": "Under the Dome",
       "year": 2009,
       "type": "novel",
-      "coverId": 14651549
+      "coverId": 14652408,
+      "coverRegion": "uk"
     },
     {
       "id": "OL15374110W",
@@ -550,7 +626,8 @@
       "title": "Full Dark, No Stars",
       "year": 2010,
       "type": "collection",
-      "coverId": 12018685
+      "coverId": 10870941,
+      "coverRegion": "uk"
     },
     {
       "id": "OL16002468W",
@@ -558,7 +635,8 @@
       "title": "11/22/63",
       "year": 2011,
       "type": "novel",
-      "coverId": 10713447
+      "coverId": 15254483,
+      "coverRegion": "uk"
     },
     {
       "id": "OL16451416W",
@@ -572,7 +650,8 @@
           "position": 4.5
         }
       ],
-      "coverId": 14653576
+      "coverId": 15254956,
+      "coverRegion": "uk"
     },
     {
       "id": "OL16806826W",
@@ -580,7 +659,8 @@
       "title": "Joyland",
       "year": 2013,
       "type": "novel",
-      "coverId": 9154939
+      "coverId": 11497063,
+      "coverRegion": "uk"
     },
     {
       "id": "OL16806877W",
@@ -594,7 +674,8 @@
           "position": 2
         }
       ],
-      "coverId": 14652972
+      "coverId": 15255534,
+      "coverRegion": "uk"
     },
     {
       "id": "OL16820059W",
@@ -608,7 +689,8 @@
           "position": 1
         }
       ],
-      "coverId": 14653120
+      "coverId": 13179404,
+      "coverRegion": "uk"
     },
     {
       "id": "OL17200413W",
@@ -616,7 +698,8 @@
       "title": "Revival",
       "year": 2014,
       "type": "novel",
-      "coverId": 14652892
+      "coverId": 14744991,
+      "coverRegion": "uk"
     },
     {
       "id": "OL17333186W",
@@ -630,7 +713,8 @@
           "position": 2
         }
       ],
-      "coverId": 8339525
+      "coverId": 15254480,
+      "coverRegion": "uk"
     },
     {
       "id": "OL17823750W",
@@ -638,7 +722,8 @@
       "title": "The Bazaar of Bad Dreams",
       "year": 2015,
       "type": "collection",
-      "coverId": 12018432
+      "coverId": 12108574,
+      "coverRegion": "uk"
     },
     {
       "id": "OL17357373W",
@@ -652,7 +737,18 @@
           "position": 3
         }
       ],
-      "coverId": 12376085
+      "coverId": 15254481,
+      "coverRegion": "uk"
+    },
+    {
+      "id": "OL24230181W",
+      "olWorkId": "OL24230181W",
+      "title": "Charlie the Choo-Choo",
+      "year": 2016,
+      "type": "children",
+      "pseudonym": "Beryl Evans",
+      "coverId": 14657246,
+      "coverRegion": "default"
     },
     {
       "id": "OL18092161W",
@@ -669,7 +765,8 @@
       "coAuthors": [
         "Richard Chizmar"
       ],
-      "coverId": 9325640
+      "coverId": 11112084,
+      "coverRegion": "uk"
     },
     {
       "id": "OL17930363W",
@@ -680,7 +777,8 @@
       "coAuthors": [
         "Owen King"
       ],
-      "coverId": 10713424
+      "coverId": 14653719,
+      "coverRegion": "uk"
     },
     {
       "id": "OL17937105W",
@@ -694,7 +792,8 @@
           "position": 1
         }
       ],
-      "coverId": 11412999
+      "coverId": 15254484,
+      "coverRegion": "uk"
     },
     {
       "id": "OL18021898W",
@@ -702,7 +801,8 @@
       "title": "Elevation",
       "year": 2018,
       "type": "novel",
-      "coverId": 12376066
+      "coverId": 14652881,
+      "coverRegion": "uk"
     },
     {
       "id": "OL20126932W",
@@ -710,7 +810,8 @@
       "title": "The Institute",
       "year": 2019,
       "type": "novel",
-      "coverId": 10712767
+      "coverId": 14653086,
+      "coverRegion": "uk"
     },
     {
       "id": "OL20663157W",
@@ -718,7 +819,8 @@
       "title": "If It Bleeds",
       "year": 2020,
       "type": "collection",
-      "coverId": 14654512
+      "coverId": 14654038,
+      "coverRegion": "uk"
     },
     {
       "id": "OL21229708W",
@@ -726,7 +828,8 @@
       "title": "Later",
       "year": 2021,
       "type": "novel",
-      "coverId": 14654000
+      "coverId": 14679320,
+      "coverRegion": "uk"
     },
     {
       "id": "OL24229351W",
@@ -734,7 +837,8 @@
       "title": "Billy Summers",
       "year": 2021,
       "type": "novel",
-      "coverId": 14654070
+      "coverId": 14655670,
+      "coverRegion": "uk"
     },
     {
       "id": "OL24790867W",
@@ -751,7 +855,8 @@
       "coAuthors": [
         "Richard Chizmar"
       ],
-      "coverId": 14655224
+      "coverId": 14682351,
+      "coverRegion": "uk"
     },
     {
       "id": "OL27589863W",
@@ -759,7 +864,8 @@
       "title": "Fairy Tale",
       "year": 2022,
       "type": "novel",
-      "coverId": 14655682
+      "coverId": 14776617,
+      "coverRegion": "uk"
     },
     {
       "id": "OL34057778W",
@@ -773,7 +879,8 @@
           "position": 2
         }
       ],
-      "coverId": 14655773
+      "coverId": 14725378,
+      "coverRegion": "uk"
     },
     {
       "id": "OL36914473W",
@@ -781,7 +888,8 @@
       "title": "You Like It Darker",
       "year": 2024,
       "type": "collection",
-      "coverId": 14544172
+      "coverId": 15135678,
+      "coverRegion": "uk"
     },
     {
       "id": "OL41942876W",
@@ -795,7 +903,35 @@
           "position": 3
         }
       ],
-      "coverId": 14825714
+      "coverId": 14825714,
+      "coverRegion": "default"
+    },
+    {
+      "id": "OL44235537W",
+      "olWorkId": "OL44235537W",
+      "title": "Hansel and Gretel",
+      "year": 2025,
+      "type": "children",
+      "coverId": 15131772,
+      "coverRegion": "default"
+    },
+    {
+      "id": "OL17400760W",
+      "olWorkId": "OL17400760W",
+      "title": "Other Worlds Than These",
+      "year": 2026,
+      "type": "novel",
+      "series": [
+        {
+          "name": "The Talisman",
+          "position": 3
+        }
+      ],
+      "coAuthors": [
+        "Peter Straub"
+      ],
+      "coverId": 13902310,
+      "coverRegion": "default"
     }
   ]
 }

@@ -1,11 +1,12 @@
 // Drafts a curation file for a new author from the same automatic
-// bibliography the site builds live (Open Library + Wikidata). Review the
-// draft by hand, then run import-author to publish it.
+// bibliography the site builds live (Wikipedia, falling back to Open
+// Library). Review the draft by hand, then run import-author to publish it.
 //
 // Usage: node scripts/add-author.mjs "Brandon Sanderson"
 //        node scripts/add-author.mjs OL1394865A
 
 import { writeFile, access } from 'node:fs/promises';
+import './dom.mjs';
 import { buildAuthor, searchAuthors, isOlAuthorKey, slugify } from '../src/lib/sources.js';
 
 const arg = process.argv.slice(2).join(' ').trim();
@@ -42,12 +43,12 @@ const curation = {
     title: b.title,
     year: b.year,
     type: b.type ?? 'novel',
-    olKey: b.olWorkId,
+    ...(b.olWorkId && { olKey: b.olWorkId }),
     ...(b.series && { series: b.series }),
   })),
 };
 await writeFile(path, JSON.stringify(curation, null, 2) + '\n');
 
-console.log(`Wrote ${path} with ${curation.books.length} books.`);
+console.log(`Wrote ${path} with ${curation.books.length} books from ${author.source.name}${author.source.url ? ` (${author.source.url})` : ''}.`);
 console.log('Review it: remove novellas, duplicates and bundles; fix years, types and series positions. Then run:');
 console.log(`  npm run import-author -- ${slug}`);

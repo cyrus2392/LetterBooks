@@ -8,6 +8,9 @@
   let message = $state('');
   let fileInput = $state();
 
+  // Book-like object for <Cover> from a stored snapshot.
+  const asBook = (id, e) => ({ title: e.title, coverId: e.coverId, coverRegion: e.coverRegion, olWorkId: /^OL\d+W$/.test(id) ? id : null });
+
   const reading = $derived(shelf('reading'));
   const tbr = $derived(shelf('tbr'));
   const recent = $derived(diary().slice(0, 10));
@@ -43,7 +46,7 @@
         {#each books as b (b.id)}
           <li>
             <a href={href('book', b.authorSlug, b.id)} title={b.title}>
-              <Cover book={b} />
+              <Cover book={asBook(b.id, b)} />
             </a>
           </li>
         {/each}
@@ -80,7 +83,7 @@
     <ol class="diary">
       {#each recent as r (r.id)}
         <li>
-          <a class="thumb" href={href('book', r.authorSlug, r.bookId)}><Cover book={{ title: r.title, coverId: r.coverId }} size="S" /></a>
+          <a class="thumb" href={href('book', r.authorSlug, r.bookId)}><Cover book={asBook(r.bookId, r)} size="S" /></a>
           <div class="entry">
             <a class="title" href={href('book', r.authorSlug, r.bookId)}>{r.title}</a>
             <div class="meta">

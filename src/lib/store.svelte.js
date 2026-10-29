@@ -4,7 +4,7 @@
 //
 // Shape (version 2):
 //   books[bookId] = {
-//     title, authorSlug, coverId,        snapshot for lists like the profile
+//     title, authorSlug, coverId, coverRegion   snapshot for lists like the profile
 //     quickRead: true?, quickReadAt,     ticked as read without a log
 //     shelf: 'reading' | 'tbr' | null, shelvedOn,
 //     reads: [{ id, startedOn, finishedOn, rating, review, loggedAt }]
@@ -64,6 +64,7 @@ function entry(book, authorSlug) {
   e.title = book.title;
   e.authorSlug = authorSlug;
   e.coverId = book.coverId ?? null;
+  e.coverRegion = book.coverRegion ?? null;
   return e;
 }
 
@@ -101,7 +102,7 @@ export function shelf(name) {
 // Every logged read across all books, newest first.
 export function diary() {
   return Object.entries(data.books)
-    .flatMap(([id, e]) => e.reads.map((r) => ({ ...r, bookId: id, title: e.title, authorSlug: e.authorSlug, coverId: e.coverId })))
+    .flatMap(([id, e]) => e.reads.map((r) => ({ ...r, bookId: id, title: e.title, authorSlug: e.authorSlug, coverId: e.coverId, coverRegion: e.coverRegion })))
     .sort((a, b) => (b.finishedOn ?? '').localeCompare(a.finishedOn ?? '') || b.loggedAt.localeCompare(a.loggedAt));
 }
 

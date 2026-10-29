@@ -1,6 +1,9 @@
-// Live book data from Open Library (works, covers) and Wikidata (series,
-// publication years, work types). Plain fetch with no Svelte, so it runs
-// both in the browser (on-demand author pages) and in Node (scripts/).
+// Live book data: bibliographies from Wikipedia, works and covers from Open
+// Library, series positions and years from Wikidata. Plain fetch with no
+// Svelte, so it runs both in the browser (on-demand author pages) and in
+// Node (scripts/, which install a DOMParser for the Wikipedia parsing).
+
+import { wikipediaBibliography } from './wikipedia.js';
 
 const OL = 'https://openlibrary.org';
 const WIKIDATA = 'https://query.wikidata.org/sparql';
@@ -75,6 +78,16 @@ export async function fetchWork(workId) {
 
 // Author bibliographies
 
+// Every Open Library work by an author (unfiltered).
+async function fetchOpenLibraryDocs(olKey) {
+  const fields = 'key,title,first_publish_year,edition_count,cover_i,language,author_key';
+  const { docs } = await getJson(`${OL}/search.json?author_key=${olKey}&fields=${fields}&limit=2000&sort=editions`);
+  return docs.filter((d) => d.title);
+}
+
+// Fallback when Wikipedia has no usable bibliography: guess the real books
+// from Open Library's works.
+
 // Titles that are bundles, splits or study aids rather than books.
 const NOT_A_BOOK = new RegExp(
   [
@@ -89,13 +102,11 @@ const NOT_A_BOOK = new RegExp(
 // Wikidata work types that mean "not a standalone book".
 const NOT_A_BOOK_TYPE = /short story|screenplay|teleplay|poem|essay|film|television|episode|article|letter|speech/i;
 
-async function fetchOpenLibraryWorks(olKey) {
-  const fields = 'key,title,first_publish_year,edition_count,cover_i,language,author_key';
-  const { docs } = await getJson(`${OL}/search.json?author_key=${olKey}&fields=${fields}&limit=2000&sort=editions`);
+function guessBooksFromOpenLibrary(olKey, docs, wikidata) {
   const thisYear = new Date().getFullYear();
   const byTitle = new Map();
   for (const d of docs) {
-    if (!d.title || !d.first_publish_year) continue;
+    if (!d.first_publish_year) continue;
     // Anthologies list many authors.
     if (!d.author_key?.includes(olKey) || d.author_key.length > 3) continue;
     if (!d.language?.includes('eng')) continue;
@@ -107,7 +118,24 @@ async function fetchOpenLibraryWorks(olKey) {
     const prev = byTitle.get(key);
     if (!prev || d.edition_count > prev.edition_count) byTitle.set(key, d);
   }
-  return [...byTitle.values()];
+
+  const books = [];
+  for (const d of byTitle.values()) {
+    const id = d.key.replace('/works/', '');
+    const wd = wikidata.get(id);
+    if (wd?.types.size && [...wd.types].every((t) => NOT_A_BOOK_TYPE.test(t))) continue;
+    const series = wd ? [...wd.series].map(([name, position]) => ({ name, position })) : [];
+    books.push({
+      id,
+      olWorkId: id,
+      title: d.title,
+      year: wd?.year ?? d.first_publish_year,
+      type: wd ? typeFrom(wd.types) : null,
+      ...(series.length && { series }),
+      coverId: d.cover_i ?? null,
+    });
+  }
+  return books;
 }
 
 // Series, publication year and type for an author's works, keyed by Open Library work id.
@@ -131,7 +159,9 @@ export async function fetchWikidataWorks(olKey) {
     works.set(id, w);
     if (row.seriesLabel) {
       const position = row.ord ? parseFloat(row.ord.value) : NaN;
-      w.series.set(row.seriesLabel.value, Number.isFinite(position) ? position : null);
+      // e.g. "canon of Hercule Poirot" -> "Hercule Poirot"
+      const name = row.seriesLabel.value.replace(/^canon of /i, '');
+      w.series.set(name, Number.isFinite(position) ? position : null);
     }
     if (row.pub) {
       const year = parseInt(row.pub.value.slice(0, 4), 10);
@@ -150,32 +180,141 @@ function typeFrom(types) {
   return null;
 }
 
-// Build an author's bibliography automatically. Good, not perfect: it can
-// include novellas or duplicate editions, which the user can hide.
-export async function buildAuthor(olKey) {
-  const [author, works, wikidata] = await Promise.all([
-    getJson(`${OL}/authors/${olKey}.json`),
-    fetchOpenLibraryWorks(olKey),
-    fetchWikidataWorks(olKey).catch(() => new Map()), // series are a bonus; don't fail without them
-  ]);
+// Title variants to match on: "The Dark Tower II: The Drawing of the Three"
+// should find Open Library's "The Drawing of the Three", and vice versa.
+function titleKeys(title) {
+  const [before, ...rest] = title.split(/:\s+/);
+  return [...new Set([title, before, rest.join(': ')].filter(Boolean).map(normalizeTitle))];
+}
 
+// Open Library work for a book title: the most-published work with a matching title.
+export function matchWork(title, docs) {
+  const index = new Map();
+  for (const d of docs) {
+    for (const key of titleKeys(d.title)) {
+      const prev = index.get(key);
+      if (!prev || (d.edition_count ?? 0) > (prev.edition_count ?? 0)) index.set(key, d);
+    }
+  }
+  for (const key of titleKeys(title)) {
+    if (index.has(key)) return index.get(key);
+  }
+  // One title ends with the other: "Alcatraz Versus the Dark Talent" vs
+  // "The Dark Talent", "Lies of the Beholder" vs "Legion--Lies of the Beholder".
+  const target = normalizeTitle(title);
+  let best = null;
+  for (const [key, d] of index) {
+    const shorter = key.length < target.length ? key : target;
+    const longer = shorter === key ? target : key;
+    if (shorter.length >= 8 && longer.endsWith(shorter) && (!best || (d.edition_count ?? 0) > (best.edition_count ?? 0))) best = d;
+  }
+  return best;
+}
+
+const sameSeries = (a, b) => {
+  const x = normalizeTitle(a);
+  const y = normalizeTitle(b);
+  return x.includes(y) || y.includes(x);
+};
+
+// Wikipedia's series come from its section headings, so positions are just
+// the order listed. Wikidata has real positions (e.g. Wheel of Time #12), so
+// use them where the series match; add Wikidata's series where Wikipedia has none.
+function mergeSeries(fromWikipedia = [], wd) {
+  const fromWikidata = wd ? [...wd.series].map(([name, position]) => ({ name, position })) : [];
+  if (!fromWikipedia.length) return fromWikidata;
+  return fromWikipedia.map((s) => {
+    const match = fromWikidata.find((w) => sameSeries(w.name, s.name) && w.position != null);
+    return match ? { name: s.name, position: match.position } : s;
+  });
+}
+
+function booksFromWikipedia(olKey, wikiBooks, docs, wikidata) {
+  const thisYear = new Date().getFullYear();
   const books = [];
-  for (const d of works) {
-    const id = d.key.replace('/works/', '');
-    const wd = wikidata.get(id);
-    if (wd?.types.size && [...wd.types].every((t) => NOT_A_BOOK_TYPE.test(t))) continue;
-    const series = wd ? [...wd.series].map(([name, position]) => ({ name, position })) : [];
+  const seen = new Set();
+  for (const b of wikiBooks) {
+    const doc = matchWork(b.title, docs);
+    const workId = doc?.key.replace('/works/', '') ?? null;
+    if (workId && seen.has(workId)) continue; // two Wikipedia titles for one work
+    if (workId) seen.add(workId);
+    const wd = workId ? wikidata.get(workId) : null;
+    const year = b.year ?? wd?.year ?? doc?.first_publish_year ?? null;
+    // Leave out announced books until they're out.
+    if (!year || year > thisYear) continue;
+    const series = mergeSeries(b.series, wd);
     books.push({
-      id,
-      olWorkId: id,
-      title: d.title,
-      year: wd?.year ?? d.first_publish_year,
-      type: wd ? typeFrom(wd.types) : null,
+      id: workId ?? `${olKey}-${normalizeTitle(b.title)}`,
+      olWorkId: workId,
+      title: b.title,
+      year,
+      type: b.type,
       ...(series.length && { series }),
-      coverId: d.cover_i ?? null,
+      coverId: doc?.cover_i ?? null,
     });
   }
+  return books;
+}
+
+// Build an author's bibliography automatically: Wikipedia's bibliography
+// when it has one, otherwise a best guess from Open Library. Either way,
+// books are matched to Open Library works for ids and covers.
+export async function buildAuthor(olKey) {
+  const [author, docs, wikidata, wiki] = await Promise.all([
+    getJson(`${OL}/authors/${olKey}.json`),
+    fetchOpenLibraryDocs(olKey),
+    fetchWikidataWorks(olKey).catch(() => new Map()), // series are a bonus; don't fail without them
+    wikipediaBibliography(olKey).catch((error) => ({ error })),
+  ]);
+
+  // A main article with only a handful of italicised titles isn't a bibliography.
+  const useWikipedia = wiki && !wiki.error && wiki.books.length >= 8;
+  const books = useWikipedia ? booksFromWikipedia(olKey, wiki.books, docs, wikidata) : guessBooksFromOpenLibrary(olKey, docs, wikidata);
   books.sort((a, b) => a.year - b.year || a.title.localeCompare(b.title));
 
-  return { slug: olKey, name: author.name, olKey, live: true, updatedAt: new Date().toISOString().slice(0, 10), books };
+  return {
+    slug: olKey,
+    name: author.name,
+    olKey,
+    live: true,
+    // `temporary` marks a fallback caused by Wikipedia being unreachable, which shouldn't be cached.
+    source: useWikipedia
+      ? { name: 'Wikipedia', title: wiki.sourceTitle, url: wiki.sourceUrl }
+      : { name: 'Open Library', ...(wiki?.error && { temporary: true }) },
+    updatedAt: new Date().toISOString().slice(0, 10),
+    books,
+  };
+}
+
+// Covers
+
+// Signs that an Open Library edition was published in the UK.
+const UK_COUNTRY = new Set(['enk', 'stk', 'wlk', 'nik', 'xxk', 'uik']); // MARC country codes
+const UK_PLACE = /london|edinburgh|glasgow|sevenoaks|harmondsworth|united kingdom|england|great britain|\bu\.?k\.?\b/i;
+const UK_PUBLISHER = new RegExp(
+  [
+    'hodder', 'new english library', 'gollancz', 'orion', 'transworld', 'corgi', 'bantam press', 'doubleday uk', 'headline',
+    'pan macmillan', '^pan\\b', 'macmillan uk', 'bloomsbury', 'faber', 'jonathan cape', 'penguin (uk|books ltd)',
+    'harpercollins uk', 'little,? brown (uk|book group)', 'sphere', 'simon (&|and) schuster uk', 'hutchinson', 'chatto',
+    'fourth estate', 'picador', '^arrow', '^century', 'black swan', 'random house uk', 'quercus', 'titan books',
+  ].join('|'),
+  'i',
+);
+const US_SIGNS = (e) => /u$/.test(e.publish_country?.trim() ?? '') || e.publish_places?.some((p) => /new york|u\.?s\.?a/i.test(p));
+
+const isUkEdition = (e) =>
+  !US_SIGNS(e) &&
+  (UK_COUNTRY.has(e.publish_country?.trim()) || e.publish_places?.some((p) => UK_PLACE.test(p)) || e.publishers?.some((p) => UK_PUBLISHER.test(p)));
+
+const editionYear = (e) => Number(e.publish_date?.match(/\b(1[89]\d\d|20\d\d)\b/)?.[1] ?? 0);
+
+// Cover from the newest UK edition of a work that has one, or null if no UK
+// edition has a cover (callers then use the work's default cover).
+export async function fetchUkCover(workId) {
+  const { entries } = await getJson(`${OL}/works/${workId}/editions.json?limit=300`);
+  const uk = entries
+    .filter((e) => e.covers?.some((c) => c > 0) && isUkEdition(e))
+    .filter((e) => !e.languages || e.languages.some((l) => l.key === '/languages/eng'))
+    .sort((a, b) => editionYear(b) - editionYear(a));
+  return uk[0]?.covers.find((c) => c > 0) ?? null;
 }

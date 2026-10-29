@@ -29,6 +29,7 @@
     { "title": "The Drawing of the Three", "year": 1987, "type": "novel", "series": { "name": "The Dark Tower", "position": 2 } },
     { "title": "Misery", "year": 1987, "type": "novel" },
     { "title": "The Tommyknockers", "year": 1987, "type": "novel" },
+    { "title": "Nightmares in the Sky", "year": 1988, "type": "nonfiction" },
     { "title": "The Dark Half", "year": 1989, "type": "novel" },
     { "title": "Four Past Midnight", "year": 1990, "type": "collection" },
     { "title": "Needful Things", "year": 1991, "type": "novel" },
@@ -46,6 +47,7 @@
     { "title": "The Girl Who Loved Tom Gordon", "year": 1999, "type": "novel" },
     { "title": "Hearts in Atlantis", "year": 1999, "type": "collection" },
     { "title": "On Writing", "year": 2000, "type": "nonfiction" },
+    { "title": "Secret Windows", "year": 2000, "type": "nonfiction" },
     { "title": "Dreamcatcher", "year": 2001, "type": "novel" },
     { "title": "Black House", "year": 2001, "type": "novel", "coAuthors": ["Peter Straub"], "series": { "name": "The Talisman", "position": 2 } },
     { "title": "From a Buick 8", "year": 2002, "type": "novel" },
@@ -71,6 +73,7 @@
     { "title": "Finders Keepers", "year": 2015, "type": "novel", "series": { "name": "Bill Hodges", "position": 2 } },
     { "title": "The Bazaar of Bad Dreams", "year": 2015, "type": "collection" },
     { "title": "End of Watch", "year": 2016, "type": "novel", "series": { "name": "Bill Hodges", "position": 3 } },
+    { "title": "Charlie the Choo-Choo", "year": 2016, "type": "children", "pseudonym": "Beryl Evans" },
     { "title": "Gwendy's Button Box", "year": 2017, "type": "novel", "coAuthors": ["Richard Chizmar"], "series": { "name": "Gwendy", "position": 1 } },
     { "title": "Sleeping Beauties", "year": 2017, "type": "novel", "coAuthors": ["Owen King"] },
     { "title": "The Outsider", "year": 2018, "type": "novel", "series": { "name": "Holly Gibney", "position": 1 } },
@@ -83,6 +86,8 @@
     { "title": "Fairy Tale", "year": 2022, "type": "novel" },
     { "title": "Holly", "year": 2023, "type": "novel", "series": { "name": "Holly Gibney", "position": 2 } },
     { "title": "You Like It Darker", "year": 2024, "type": "collection" },
-    { "title": "Never Flinch", "year": 2025, "type": "novel", "series": { "name": "Holly Gibney", "position": 3 } }
+    { "title": "Never Flinch", "year": 2025, "type": "novel", "series": { "name": "Holly Gibney", "position": 3 } },
+    { "title": "Hansel and Gretel", "year": 2025, "type": "children" },
+    { "title": "Other Worlds Than These", "year": 2026, "type": "novel", "coAuthors": ["Peter Straub"], "series": { "name": "The Talisman", "position": 3 } }
   ]
 }

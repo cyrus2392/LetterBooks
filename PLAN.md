@@ -6,16 +6,18 @@ Letterboxd, but for books: log what you've read quickly and see your progress th
 
 - **Single user for now.** Reading data is stored in the browser (localStorage), with export/import on the profile page. All storage goes through `src/lib/store.svelte.js`, so swapping in Supabase for accounts later only touches that module.
 - **Static site on GitHub Pages.** Built with Vite + Svelte. GitHub Actions builds and deploys on every push to `main`.
-- **Book data from APIs, not scraping.** Open Library provides works (the "parent version" of a title), metadata and covers. Goodreads/Amazon scraping is against their terms and brittle.
+- **Book data from APIs, not scraping.** Bibliographies come from Wikipedia (its "<Author> bibliography" articles are human-maintained lists of real books). Open Library provides works (the "parent version" of a title) and covers; Wikidata provides series positions. Goodreads/Amazon scraping is against their terms and brittle.
+- **UK covers.** Each book's cover comes from the newest UK edition on Open Library that has one (UK place, publisher or MARC country code), falling back to the work's default cover. Curated authors get theirs at import time; live authors look them up as covers scroll into view, cached for a month.
 - **Curated bibliographies.** Open Library lists 600+ "works" for Stephen King (translations, short stories, anthologies, duplicates), against ~90 real books. Each author has a curation file (`data/curation/<author>.json`) listing the canonical books. The import script matches them to Open Library for keys and covers, so totals and percentages are meaningful.
-- **Live authors for everyone else.** Any author found by search gets a page built in the browser from Open Library (works, filtered automatically) and Wikidata (series, publication years, work types), cached for a week. The automatic list can include strays, so any book can be hidden from an author's totals. Adding a live author to "your authors" puts it on the home page. `npm run add-author` drafts a curation file from the same automatic list when an author deserves a hand-checked one.
+- **Live authors for everyone else.** Any author found by search gets a page built in the browser from their Wikipedia bibliography (tables and lists under each heading; headings give type and series), matched to Open Library works, with Wikidata series positions. Authors without a usable Wikipedia bibliography fall back to Open Library's works, filtered automatically. Pages are cached for a week. The automatic list can include strays, so any book can be hidden from an author's totals. Adding a live author to "your authors" puts it on the home page. `npm run add-author` drafts a curation file from the same automatic list when an author deserves a hand-checked one.
 
 ## Data
 
 - `data/curation/<author>.json`: hand-checked list of books (title, year, type, series, co-authors), with optional Open Library key/cover overrides.
-- `scripts/import-author.mjs`: matches curated books to Open Library and writes `public/data/authors/<author>.json`.
+- `scripts/import-author.mjs`: matches curated books to Open Library, picks UK covers, and writes `public/data/authors/<author>.json`.
 - `public/data/authors.json`: index of curated authors.
-- `src/lib/sources.js`: Open Library + Wikidata lookups (search, automatic bibliographies), shared by the site and the scripts.
+- `src/lib/wikipedia.js`: finds and parses an author's Wikipedia bibliography.
+- `src/lib/sources.js`: Open Library + Wikidata lookups (search, matching, UK covers) and automatic bibliographies, shared by the site and the scripts.
 - `scripts/add-author.mjs`: drafts `data/curation/<author>.json` for review.
 - Covers are loaded from `covers.openlibrary.org`.
 

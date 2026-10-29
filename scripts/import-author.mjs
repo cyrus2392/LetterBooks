@@ -26,7 +26,7 @@ async function getJson(url) {
 }
 
 // One request for all of the author's works, then match locally.
-const fields = 'key,title,first_publish_year,edition_count,cover_i,author_key';
+const fields = 'key,title,first_publish_year,edition_count,cover_i,author_key,already_read_count';
 const { docs } = await getJson(
   `https://openlibrary.org/search.json?author_key=${curation.olKey}&fields=${fields}&limit=2000`,
 );
@@ -50,6 +50,8 @@ for (const book of curation.books) {
     ...(book.coAuthors && { coAuthors: book.coAuthors }),
     ...(book.pseudonym && { pseudonym: book.pseudonym }),
     coverId: book.coverId ?? match?.cover_i ?? null,
+    // Open Library readers who've shelved it as read; ranks suggestions.
+    readers: match?.already_read_count ?? 0,
     // 'manual' (set in curation), 'uk' (a UK edition's cover) or 'default' (the work's own cover).
     coverRegion: book.coverId ? 'manual' : 'default',
   });

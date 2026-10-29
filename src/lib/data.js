@@ -33,8 +33,8 @@ export const getAuthors = () => getJson('authors.json');
 
 function getLiveAuthor(olKey) {
   return memo(`live:${olKey}`, async () => {
-    // v2: bibliographies moved to Wikipedia; older cached lists are ignored.
-    const storageKey = `letterbooks:cache:author-v2:${olKey}`;
+    // Bumped when the shape changes (v2: Wikipedia lists; v3: reader counts) so older caches are ignored.
+    const storageKey = `letterbooks:cache:author-v3:${olKey}`;
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey));
       if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) return saved.author;

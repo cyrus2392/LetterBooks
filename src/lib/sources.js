@@ -80,7 +80,7 @@ export async function fetchWork(workId) {
 
 // Every Open Library work by an author (unfiltered).
 async function fetchOpenLibraryDocs(olKey) {
-  const fields = 'key,title,first_publish_year,edition_count,cover_i,language,author_key';
+  const fields = 'key,title,first_publish_year,edition_count,cover_i,language,author_key,already_read_count';
   const { docs } = await getJson(`${OL}/search.json?author_key=${olKey}&fields=${fields}&limit=2000&sort=editions`);
   return docs.filter((d) => d.title);
 }
@@ -89,7 +89,7 @@ async function fetchOpenLibraryDocs(olKey) {
 // from Open Library's works.
 
 // Titles that are bundles, splits or study aids rather than books.
-const NOT_A_BOOK = new RegExp(
+export const NOT_A_BOOK = new RegExp(
   [
     'box(ed)? set', 'omnibus', 'collection set', 'trilogy set', '\\d+ books', 'complete (novels|works)', 'selected works',
     '\\bbooks? \\d+ ?[-–&] ?\\d+', '\\bvol(ume)?s? \\d+ ?[-–&]', '\\[\\d\\/\\d\\]', '\\d\\/\\d\\b', '\\(.*\\/.*\\)',
@@ -133,6 +133,7 @@ function guessBooksFromOpenLibrary(olKey, docs, wikidata) {
       type: wd ? typeFrom(wd.types) : null,
       ...(series.length && { series }),
       coverId: d.cover_i ?? null,
+      readers: d.already_read_count ?? 0,
     });
   }
   return books;
@@ -224,9 +225,31 @@ function mergeSeries(fromWikipedia = [], wd) {
   const fromWikidata = wd ? [...wd.series].map(([name, position]) => ({ name, position })) : [];
   if (!fromWikipedia.length) return fromWikidata;
   return fromWikipedia.map((s) => {
-    const match = fromWikidata.find((w) => sameSeries(w.name, s.name) && w.position != null);
-    return match ? { name: s.name, position: match.position } : s;
+    const numbered = fromWikidata.filter((w) => w.position != null);
+    // An exact name match beats a loose one ("Dune" is part of several Wikidata series names).
+    const match =
+      numbered.find((w) => normalizeTitle(w.name) === normalizeTitle(s.name)) ?? numbered.find((w) => sameSeries(w.name, s.name));
+    return match ? { name: s.name, position: match.position, listed: s.position } : s;
   });
+}
+
+// If Wikidata's positions give two books in a series the same number, they
+// aren't trustworthy for that series: go back to Wikipedia's listed order.
+function checkSeriesPositions(books) {
+  const positions = new Map();
+  for (const b of books) {
+    for (const s of b.series ?? []) {
+      if (!positions.has(s.name)) positions.set(s.name, []);
+      positions.get(s.name).push(s.position);
+    }
+  }
+  for (const b of books) {
+    for (const s of b.series ?? []) {
+      const all = positions.get(s.name).filter((p) => p != null);
+      if (new Set(all).size < all.length && 'listed' in s) s.position = s.listed;
+      delete s.listed;
+    }
+  }
 }
 
 function booksFromWikipedia(olKey, wikiBooks, docs, wikidata) {
@@ -251,8 +274,10 @@ function booksFromWikipedia(olKey, wikiBooks, docs, wikidata) {
       type: b.type,
       ...(series.length && { series }),
       coverId: doc?.cover_i ?? null,
+      readers: doc?.already_read_count ?? 0,
     });
   }
+  checkSeriesPositions(books);
   return books;
 }
 
@@ -317,4 +342,76 @@ export async function fetchUkCover(workId) {
     .filter((e) => !e.languages || e.languages.some((l) => l.key === '/languages/eng'))
     .sort((a, b) => editionYear(b) - editionYear(a));
   return uk[0]?.covers.find((c) => c > 0) ?? null;
+}
+
+// Genres, for suggestions
+
+// Open Library subjects are free-form ("horror tales", "Fiction, fantasy,
+// epic", "nyt:..."). These map them onto a small set of genres, each with the
+// subject used to look up popular books in it. Broad genres count for less,
+// so a reader of epic fantasy gets epic fantasy rather than "fantasy".
+export const GENRES = [
+  { label: 'Epic fantasy', match: /epic fantasy|high fantasy|fantasy, epic/i, query: 'epic fantasy', weight: 1 },
+  { label: 'Urban fantasy', match: /urban fantasy|fantasy, urban/i, query: 'urban fantasy', weight: 1 },
+  { label: 'Dark fantasy', match: /dark fantasy|grimdark/i, query: 'dark fantasy', weight: 1 },
+  { label: 'Space opera', match: /space opera|space warfare|interstellar/i, query: 'space opera', weight: 1 },
+  { label: 'Cyberpunk', match: /cyberpunk/i, query: 'cyberpunk', weight: 1 },
+  { label: 'Dystopian fiction', match: /dystopi/i, query: 'dystopias', weight: 1 },
+  { label: 'Post-apocalyptic fiction', match: /post-?apocalyptic|end of the world/i, query: 'post-apocalyptic fiction', weight: 1 },
+  { label: 'Time travel', match: /time travel/i, query: 'time travel', weight: 1 },
+  { label: 'Horror', match: /horror/i, query: 'horror fiction', weight: 1 },
+  { label: 'Ghost stories', match: /ghost stor|haunted house/i, query: 'ghost stories', weight: 1 },
+  { label: 'Vampires', match: /vampire/i, query: 'vampires', weight: 1 },
+  { label: 'Psychological thrillers', match: /psychological (thriller|suspense)/i, query: 'psychological thrillers', weight: 1 },
+  // Open Library tags a lot as "thrillers"/"suspense", so these count for little.
+  { label: 'Thrillers', match: /\bthrillers?\b|suspense/i, query: 'thrillers', weight: 0.3 },
+  { label: 'Detective fiction', match: /detective|private investigators/i, query: 'detective and mystery stories', weight: 1 },
+  { label: 'Police procedurals', match: /police procedural/i, query: 'police procedural', weight: 1 },
+  { label: 'Crime fiction', match: /\bcrime\b/i, query: 'crime fiction', weight: 0.8 },
+  { label: 'Spy fiction', match: /\bspy\b|espionage|secret service/i, query: 'spy stories', weight: 1 },
+  { label: 'Historical fiction', match: /historical fiction|fiction, historical/i, query: 'historical fiction', weight: 1 },
+  { label: 'Romance', match: /\bromance\b|love stories/i, query: 'romance fiction', weight: 0.8 },
+  { label: 'Magical realism', match: /magic(al)? realism/i, query: 'magic realism (literature)', weight: 1 },
+  { label: 'Gothic fiction', match: /gothic/i, query: 'gothic fiction', weight: 1 },
+  { label: 'Coming of age', match: /coming of age|bildungsroman/i, query: 'coming of age', weight: 0.8 },
+  { label: 'Humorous fiction', match: /humorous|humor|humour|comic fantasy/i, query: 'humorous fiction', weight: 0.8 },
+  { label: 'War fiction', match: /war stories|war fiction/i, query: 'war stories', weight: 1 },
+  { label: 'Science fiction', match: /science[- ]fiction|sci-fi/i, query: 'science fiction', weight: 0.5 },
+  { label: 'Fantasy', match: /\bfantasy\b/i, query: 'fantasy fiction', weight: 0.5 },
+  { label: 'Mystery', match: /\bmystery\b/i, query: 'mystery fiction', weight: 0.5 },
+];
+
+// The genres a work belongs to, from its Open Library subjects.
+export async function fetchGenres(workId) {
+  const w = await getJson(`${OL}/works/${workId}.json`);
+  // "genre:high fantasy" is a genre; "nyt:...", "series:..." and the like aren't.
+  const subjects = (w.subjects ?? [])
+    .filter((s) => typeof s === 'string')
+    .map((s) => s.replace(/^genre:/i, ''))
+    .filter((s) => !s.includes(':'));
+  return GENRES.filter((g) => subjects.some((s) => g.match.test(s))).map((g) => g.label);
+}
+
+// The most-read adult books in a genre since 1950, with reader counts and
+// ratings. Older classics and children's/YA books otherwise crowd out
+// everything else (Open Library tags Harry Potter as science fiction).
+export async function popularInGenre(query, limit = 60) {
+  const fields = 'key,title,author_name,author_key,cover_i,first_publish_year,already_read_count,ratings_average';
+  const q = `subject:"${query}" language:eng first_publish_year:[1950 TO *] -subject:"juvenile fiction" -subject:"young adult fiction"`;
+  const { docs } = await getJson(`${OL}/search.json?q=${encodeURIComponent(q)}&sort=readinglog&fields=${fields}&limit=${limit}`);
+  return docs
+    .filter((d) => d.author_key?.length && d.title && !NOT_A_BOOK.test(d.title))
+    // Skip titles in other scripts; the site is English-language for now.
+    .filter((d) => !/[^\u0000-ɏ -⁯]/.test(d.title))
+    .map((d) => ({
+      id: d.key.replace('/works/', ''),
+      olWorkId: d.key.replace('/works/', ''),
+      title: d.title,
+      year: d.first_publish_year ?? null,
+      coverId: d.cover_i ?? null,
+      readers: d.already_read_count ?? 0,
+      rating: d.ratings_average ?? null,
+      authorKey: d.author_key[0],
+      authorName: d.author_name?.[0] ?? 'Unknown',
+    }));
 }

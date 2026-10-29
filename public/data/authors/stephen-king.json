@@ -11,6 +11,7 @@
       "year": 1974,
       "type": "novel",
       "coverId": 15255731,
+      "readers": 377,
       "coverRegion": "uk"
     },
     {
@@ -20,6 +21,7 @@
       "year": 1975,
       "type": "novel",
       "coverId": 15255779,
+      "readers": 232,
       "coverRegion": "uk"
     },
     {
@@ -35,6 +37,7 @@
         }
       ],
       "coverId": 14654031,
+      "readers": 466,
       "coverRegion": "uk"
     },
     {
@@ -45,6 +48,7 @@
       "type": "novel",
       "pseudonym": "Richard Bachman",
       "coverId": 8565707,
+      "readers": 39,
       "coverRegion": "default"
     },
     {
@@ -54,6 +58,7 @@
       "year": 1978,
       "type": "collection",
       "coverId": 10145920,
+      "readers": 79,
       "coverRegion": "uk"
     },
     {
@@ -63,6 +68,7 @@
       "year": 1978,
       "type": "novel",
       "coverId": 15253669,
+      "readers": 193,
       "coverRegion": "uk"
     },
     {
@@ -73,6 +79,7 @@
       "type": "novel",
       "pseudonym": "Richard Bachman",
       "coverId": 15123505,
+      "readers": 98,
       "coverRegion": "uk"
     },
     {
@@ -82,6 +89,7 @@
       "year": 1979,
       "type": "novel",
       "coverId": 8668255,
+      "readers": 125,
       "coverRegion": "uk"
     },
     {
@@ -91,6 +99,7 @@
       "year": 1980,
       "type": "novel",
       "coverId": 14654014,
+      "readers": 87,
       "coverRegion": "uk"
     },
     {
@@ -100,6 +109,7 @@
       "year": 1981,
       "type": "nonfiction",
       "coverId": 14652880,
+      "readers": 102,
       "coverRegion": "uk"
     },
     {
@@ -110,6 +120,7 @@
       "type": "novel",
       "pseudonym": "Richard Bachman",
       "coverId": 14651941,
+      "readers": 33,
       "coverRegion": "uk"
     },
     {
@@ -119,6 +130,7 @@
       "year": 1981,
       "type": "novel",
       "coverId": 12108424,
+      "readers": 133,
       "coverRegion": "uk"
     },
     {
@@ -129,6 +141,7 @@
       "type": "novel",
       "pseudonym": "Richard Bachman",
       "coverId": 12412351,
+      "readers": 80,
       "coverRegion": "uk"
     },
     {
@@ -144,6 +157,7 @@
         }
       ],
       "coverId": 14546623,
+      "readers": 172,
       "coverRegion": "uk"
     },
     {
@@ -153,6 +167,7 @@
       "year": 1982,
       "type": "collection",
       "coverId": 8665145,
+      "readers": 57,
       "coverRegion": "uk"
     },
     {
@@ -162,6 +177,7 @@
       "year": 1983,
       "type": "novel",
       "coverId": 8309510,
+      "readers": 126,
       "coverRegion": "uk"
     },
     {
@@ -171,6 +187,7 @@
       "year": 1983,
       "type": "novel",
       "coverId": 12347428,
+      "readers": 304,
       "coverRegion": "uk"
     },
     {
@@ -180,6 +197,7 @@
       "year": 1983,
       "type": "novel",
       "coverId": 291371,
+      "readers": 47,
       "coverRegion": "uk"
     },
     {
@@ -198,6 +216,7 @@
         "Peter Straub"
       ],
       "coverId": 15253694,
+      "readers": 30,
       "coverRegion": "uk"
     },
     {
@@ -208,6 +227,7 @@
       "type": "novel",
       "pseudonym": "Richard Bachman",
       "coverId": 14654165,
+      "readers": 116,
       "coverRegion": "uk"
     },
     {
@@ -217,6 +237,7 @@
       "year": 1985,
       "type": "collection",
       "coverId": 15214558,
+      "readers": 98,
       "coverRegion": "uk"
     },
     {
@@ -226,6 +247,7 @@
       "year": 1986,
       "type": "novel",
       "coverId": 15255912,
+      "readers": 621,
       "coverRegion": "uk"
     },
     {
@@ -235,6 +257,7 @@
       "year": 1987,
       "type": "novel",
       "coverId": 11302139,
+      "readers": 79,
       "coverRegion": "uk"
     },
     {
@@ -250,6 +273,7 @@
         }
       ],
       "coverId": 14546626,
+      "readers": 184,
       "coverRegion": "uk"
     },
     {
@@ -259,6 +283,7 @@
       "year": 1987,
       "type": "novel",
       "coverId": 14656010,
+      "readers": 305,
       "coverRegion": "uk"
     },
     {
@@ -268,6 +293,7 @@
       "year": 1987,
       "type": "novel",
       "coverId": 8792499,
+      "readers": 65,
       "coverRegion": "uk"
     },
     {
@@ -277,6 +303,7 @@
       "year": 1988,
       "type": "nonfiction",
       "coverId": 7092369,
+      "readers": 6,
       "coverRegion": "default"
     },
     {
@@ -286,6 +313,7 @@
       "year": 1989,
       "type": "novel",
       "coverId": 8668007,
+      "readers": 76,
       "coverRegion": "uk"
     },
     {
@@ -295,6 +323,7 @@
       "year": 1990,
       "type": "collection",
       "coverId": 14721378,
+      "readers": 70,
       "coverRegion": "uk"
     },
     {
@@ -304,6 +333,7 @@
       "year": 1991,
       "type": "novel",
       "coverId": 10549310,
+      "readers": 108,
       "coverRegion": "uk"
     },
     {
@@ -319,6 +349,7 @@
         }
       ],
       "coverId": 14546628,
+      "readers": 156,
       "coverRegion": "uk"
     },
     {
@@ -328,6 +359,7 @@
       "year": 1992,
       "type": "novel",
       "coverId": 14657013,
+      "readers": 92,
       "coverRegion": "uk"
     },
     {
@@ -337,6 +369,7 @@
       "year": 1992,
       "type": "novel",
       "coverId": 14655033,
+      "readers": 79,
       "coverRegion": "uk"
     },
     {
@@ -346,6 +379,7 @@
       "year": 1993,
       "type": "collection",
       "coverId": 8756854,
+      "readers": 65,
       "coverRegion": "uk"
     },
     {
@@ -355,6 +389,7 @@
       "year": 1994,
       "type": "novel",
       "coverId": 10548142,
+      "readers": 152,
       "coverRegion": "uk"
     },
     {
@@ -364,6 +399,7 @@
       "year": 1995,
       "type": "novel",
       "coverId": 14654572,
+      "readers": 79,
       "coverRegion": "uk"
     },
     {
@@ -373,6 +409,7 @@
       "year": 1996,
       "type": "novel",
       "coverId": 15259261,
+      "readers": 239,
       "coverRegion": "uk"
     },
     {
@@ -382,6 +419,7 @@
       "year": 1996,
       "type": "novel",
       "coverId": 11627656,
+      "readers": 61,
       "coverRegion": "uk"
     },
     {
@@ -392,6 +430,7 @@
       "type": "novel",
       "pseudonym": "Richard Bachman",
       "coverId": 11415857,
+      "readers": 28,
       "coverRegion": "uk"
     },
     {
@@ -407,6 +446,7 @@
         }
       ],
       "coverId": 14546631,
+      "readers": 140,
       "coverRegion": "uk"
     },
     {
@@ -416,6 +456,7 @@
       "year": 1998,
       "type": "novel",
       "coverId": 14654047,
+      "readers": 97,
       "coverRegion": "uk"
     },
     {
@@ -425,6 +466,7 @@
       "year": 1999,
       "type": "novel",
       "coverId": 15254982,
+      "readers": 90,
       "coverRegion": "uk"
     },
     {
@@ -434,6 +476,7 @@
       "year": 1999,
       "type": "collection",
       "coverId": 8668725,
+      "readers": 92,
       "coverRegion": "uk"
     },
     {
@@ -443,6 +486,7 @@
       "year": 2000,
       "type": "nonfiction",
       "coverId": 15258947,
+      "readers": 144,
       "coverRegion": "uk"
     },
     {
@@ -452,6 +496,7 @@
       "year": 2000,
       "type": "nonfiction",
       "coverId": 8666991,
+      "readers": 0,
       "coverRegion": "default"
     },
     {
@@ -461,6 +506,7 @@
       "year": 2001,
       "type": "novel",
       "coverId": 14652854,
+      "readers": 89,
       "coverRegion": "uk"
     },
     {
@@ -479,6 +525,7 @@
         "Peter Straub"
       ],
       "coverId": 15253696,
+      "readers": 14,
       "coverRegion": "uk"
     },
     {
@@ -488,6 +535,7 @@
       "year": 2002,
       "type": "novel",
       "coverId": 14797255,
+      "readers": 74,
       "coverRegion": "uk"
     },
     {
@@ -497,6 +545,7 @@
       "year": 2002,
       "type": "collection",
       "coverId": 15254985,
+      "readers": 71,
       "coverRegion": "uk"
     },
     {
@@ -512,6 +561,7 @@
         }
       ],
       "coverId": 15249904,
+      "readers": 214,
       "coverRegion": "uk"
     },
     {
@@ -527,6 +577,7 @@
         }
       ],
       "coverId": 15254413,
+      "readers": 116,
       "coverRegion": "uk"
     },
     {
@@ -542,6 +593,7 @@
         }
       ],
       "coverId": 15254470,
+      "readers": 66,
       "coverRegion": "uk"
     },
     {
@@ -554,6 +606,7 @@
         "Stewart O'Nan"
       ],
       "coverId": 2353363,
+      "readers": 0,
       "coverRegion": "uk"
     },
     {
@@ -563,6 +616,7 @@
       "year": 2005,
       "type": "novel",
       "coverId": 14653573,
+      "readers": 40,
       "coverRegion": "uk"
     },
     {
@@ -572,6 +626,7 @@
       "year": 2006,
       "type": "novel",
       "coverId": 14652706,
+      "readers": 152,
       "coverRegion": "uk"
     },
     {
@@ -581,6 +636,7 @@
       "year": 2006,
       "type": "novel",
       "coverId": 14654027,
+      "readers": 49,
       "coverRegion": "uk"
     },
     {
@@ -591,6 +647,7 @@
       "type": "novel",
       "pseudonym": "Richard Bachman",
       "coverId": 10358247,
+      "readers": 37,
       "coverRegion": "uk"
     },
     {
@@ -600,6 +657,7 @@
       "year": 2008,
       "type": "novel",
       "coverId": 14740869,
+      "readers": 89,
       "coverRegion": "uk"
     },
     {
@@ -609,6 +667,7 @@
       "year": 2008,
       "type": "collection",
       "coverId": 10191710,
+      "readers": 60,
       "coverRegion": "uk"
     },
     {
@@ -618,6 +677,7 @@
       "year": 2009,
       "type": "novel",
       "coverId": 14652408,
+      "readers": 118,
       "coverRegion": "uk"
     },
     {
@@ -627,6 +687,7 @@
       "year": 2010,
       "type": "collection",
       "coverId": 10870941,
+      "readers": 75,
       "coverRegion": "uk"
     },
     {
@@ -636,6 +697,7 @@
       "year": 2011,
       "type": "novel",
       "coverId": 15254483,
+      "readers": 159,
       "coverRegion": "uk"
     },
     {
@@ -651,6 +713,7 @@
         }
       ],
       "coverId": 15254956,
+      "readers": 32,
       "coverRegion": "uk"
     },
     {
@@ -660,6 +723,7 @@
       "year": 2013,
       "type": "novel",
       "coverId": 11497063,
+      "readers": 42,
       "coverRegion": "uk"
     },
     {
@@ -675,6 +739,7 @@
         }
       ],
       "coverId": 15255534,
+      "readers": 95,
       "coverRegion": "uk"
     },
     {
@@ -690,6 +755,7 @@
         }
       ],
       "coverId": 13179404,
+      "readers": 116,
       "coverRegion": "uk"
     },
     {
@@ -699,6 +765,7 @@
       "year": 2014,
       "type": "novel",
       "coverId": 14744991,
+      "readers": 44,
       "coverRegion": "uk"
     },
     {
@@ -714,6 +781,7 @@
         }
       ],
       "coverId": 15254480,
+      "readers": 58,
       "coverRegion": "uk"
     },
     {
@@ -723,6 +791,7 @@
       "year": 2015,
       "type": "collection",
       "coverId": 12108574,
+      "readers": 53,
       "coverRegion": "uk"
     },
     {
@@ -738,6 +807,7 @@
         }
       ],
       "coverId": 15254481,
+      "readers": 44,
       "coverRegion": "uk"
     },
     {
@@ -748,6 +818,7 @@
       "type": "children",
       "pseudonym": "Beryl Evans",
       "coverId": 14657246,
+      "readers": 1,
       "coverRegion": "default"
     },
     {
@@ -766,6 +837,7 @@
         "Richard Chizmar"
       ],
       "coverId": 11112084,
+      "readers": 11,
       "coverRegion": "uk"
     },
     {
@@ -778,6 +850,7 @@
         "Owen King"
       ],
       "coverId": 14653719,
+      "readers": 8,
       "coverRegion": "uk"
     },
     {
@@ -793,6 +866,7 @@
         }
       ],
       "coverId": 15254484,
+      "readers": 26,
       "coverRegion": "uk"
     },
     {
@@ -802,6 +876,7 @@
       "year": 2018,
       "type": "novel",
       "coverId": 14652881,
+      "readers": 37,
       "coverRegion": "uk"
     },
     {
@@ -811,6 +886,7 @@
       "year": 2019,
       "type": "novel",
       "coverId": 14653086,
+      "readers": 47,
       "coverRegion": "uk"
     },
     {
@@ -820,6 +896,7 @@
       "year": 2020,
       "type": "collection",
       "coverId": 14654038,
+      "readers": 13,
       "coverRegion": "uk"
     },
     {
@@ -829,6 +906,7 @@
       "year": 2021,
       "type": "novel",
       "coverId": 14679320,
+      "readers": 11,
       "coverRegion": "uk"
     },
     {
@@ -838,6 +916,7 @@
       "year": 2021,
       "type": "novel",
       "coverId": 14655670,
+      "readers": 32,
       "coverRegion": "uk"
     },
     {
@@ -856,6 +935,7 @@
         "Richard Chizmar"
       ],
       "coverId": 14682351,
+      "readers": 2,
       "coverRegion": "uk"
     },
     {
@@ -865,6 +945,7 @@
       "year": 2022,
       "type": "novel",
       "coverId": 14776617,
+      "readers": 36,
       "coverRegion": "uk"
     },
     {
@@ -880,6 +961,7 @@
         }
       ],
       "coverId": 14725378,
+      "readers": 19,
       "coverRegion": "uk"
     },
     {
@@ -889,6 +971,7 @@
       "year": 2024,
       "type": "collection",
       "coverId": 15135678,
+      "readers": 7,
       "coverRegion": "uk"
     },
     {
@@ -904,6 +987,7 @@
         }
       ],
       "coverId": 14825714,
+      "readers": 3,
       "coverRegion": "default"
     },
     {
@@ -913,6 +997,7 @@
       "year": 2025,
       "type": "children",
       "coverId": 15131772,
+      "readers": 1,
       "coverRegion": "default"
     },
     {
@@ -931,6 +1016,7 @@
         "Peter Straub"
       ],
       "coverId": 13902310,
+      "readers": 5,
       "coverRegion": "default"
     }
   ]

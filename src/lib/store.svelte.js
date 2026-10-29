@@ -84,6 +84,23 @@ export const shelfOf = (bookId) => data.books[bookId]?.shelf ?? null;
 export const readCount = (bookIds) => bookIds.filter(isRead).length;
 export const totalRead = () => Object.values(data.books).filter(hasRead).length;
 
+// Every book you've read, most recent first, with your latest rating.
+export function readBooks() {
+  return Object.entries(data.books)
+    .filter(([, e]) => hasRead(e))
+    .map(([id, e]) => {
+      const reads = readsOf(id);
+      return {
+        id,
+        title: e.title,
+        authorSlug: e.authorSlug,
+        rating: reads.find((r) => r.rating)?.rating ?? null,
+        readOn: reads[0]?.finishedOn ?? e.quickReadAt?.slice(0, 10) ?? '',
+      };
+    })
+    .sort((a, b) => b.readOn.localeCompare(a.readOn));
+}
+
 // Authors you've read at least one book by, as refs (curated slug or Open Library key).
 export const readAuthorRefs = () => [
   ...new Set(Object.values(data.books).filter(hasRead).map((e) => e.authorSlug).filter(Boolean)),

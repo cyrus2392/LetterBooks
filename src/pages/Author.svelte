@@ -3,7 +3,7 @@
   import Progress from '../components/Progress.svelte';
   import SeriesCard from '../components/SeriesCard.svelte';
   import { getAuthor, seriesOf } from '../lib/data.js';
-  import { readCount, isHidden, isFollowing, setFollowing } from '../lib/store.svelte.js';
+  import { readCount, ownedCount, isHidden, isFollowing, setFollowing } from '../lib/store.svelte.js';
   import { isOlAuthorKey } from '../lib/sources.js';
 
   let { slug } = $props();
@@ -27,7 +27,9 @@
   <section class="head">
     <div>
       <h1>{author.name}</h1>
-      <p class="muted">{visible.length} books</p>
+      <p class="muted">
+        {visible.length} books{#if ownedCount(ids)} · <span class="owned">{ownedCount(ids)} on your bookshelf</span>{/if}
+      </p>
       <div class="buttons">
         {#if author.live}
           <button class="btn" class:primary={!following} aria-pressed={following}
@@ -109,6 +111,8 @@
   h1 { font-size: 2rem; }
 
   .head p { margin: 4px 0 0; }
+
+  .owned { color: var(--owned); }
 
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 

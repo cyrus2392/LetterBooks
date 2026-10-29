@@ -33,6 +33,7 @@ Letterboxd, but for books: log what you've read quickly and see your progress th
 - **Series** (`#/series/<author>/<name>`): the series in reading order with progress.
 - **Search** (`#/search/<query>`): your authors and curated books, plus authors and books on Open Library.
 - **Book** (`#/book/<author>/<work-id>`): cover, details, read toggle, "Currently reading" and "Want to read" shelves, and logged reads (start/finish dates, half-star rating, review) with edit/delete.
+- **Library** (`#/library/owned`, `#/library/read`): your bookshelf (books you own) and the books you've read, as two tabs. Owning and reading are independent, so each tab filters by the other (owned but not read yet; read but not owned). Covers have an owned toggle (top left) beside the read tick (top right); book pages have "I own this".
 - **Profile** (`#/profile`): total books read, currently reading and want-to-read shelves, recent reads, and export/import of reading data.
 
 ## Phases

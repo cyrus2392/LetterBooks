@@ -3,7 +3,7 @@
   import Stars from '../components/Stars.svelte';
   import LogReadDialog from '../components/LogReadDialog.svelte';
   import { getBook, TYPE_LABELS } from '../lib/data.js';
-  import { isRead, shelfOf, setShelf, readsOf, latestRating, getEntry } from '../lib/store.svelte.js';
+  import { isRead, isOwned, setOwned, shelfOf, setShelf, readsOf, latestRating, getEntry } from '../lib/store.svelte.js';
   import { toggleRead } from '../lib/actions.js';
   import { formatDate } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
@@ -20,6 +20,7 @@
   <p class="muted">Loading…</p>
 {:then { author, book }}
   {@const read = isRead(book.id)}
+  {@const owned = isOwned(book.id)}
   {@const current = shelfOf(book.id)}
   {@const reads = readsOf(book.id)}
   {@const rating = latestRating(book.id)}
@@ -48,6 +49,9 @@
       <div class="actions" role="group" aria-label="Your reading">
         <button class="btn" class:on={read} aria-pressed={read} onclick={() => toggleRead(book, author.slug)}>
           {read ? '✓ Read' : 'Mark as read'}
+        </button>
+        <button class="btn" class:owned aria-pressed={owned} onclick={() => setOwned(book, author.slug, !owned)}>
+          {owned ? '📚 On your bookshelf' : 'I own this'}
         </button>
         <button class="btn" class:on={current === 'reading'} aria-pressed={current === 'reading'}
                 onclick={() => setShelf(book, author.slug, current === 'reading' ? null : 'reading')}>
@@ -146,6 +150,11 @@
   .btn.on {
     border-color: var(--accent);
     color: var(--accent);
+  }
+
+  .btn.owned {
+    border-color: var(--owned);
+    color: var(--owned);
   }
 
   .status { margin: 6px 0; display: flex; align-items: center; gap: 8px; }

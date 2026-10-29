@@ -1,18 +1,20 @@
 <script>
   import Cover from './Cover.svelte';
   import { href } from '../lib/router.svelte.js';
-  import { isRead, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
+  import { isRead, isOwned, setOwned, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
   import { toggleRead } from '../lib/actions.js';
 
-  // `editing` swaps the read tick for a hide/restore button; `label` is shown
-  // above the title (e.g. a series position).
+  // Two toggles on the cover: owned (top left) and read (top right).
+  // `editing` swaps them for a hide/restore button; `label` is shown above
+  // the title (e.g. a series position).
   let { book, authorSlug, editing = false, label = null } = $props();
   const read = $derived(isRead(book.id));
+  const owned = $derived(isOwned(book.id));
   const current = $derived(shelfOf(book.id));
   const hidden = $derived(isHidden(book.id));
 </script>
 
-<article class:read class:hidden>
+<article class:read class:owned class:hidden>
   <div class="cover">
     <a href={href('book', authorSlug, book.id)} aria-label="{book.title} ({book.year})">
       <Cover {book} />
@@ -36,6 +38,15 @@
         {/if}
       </button>
     {:else}
+      <button
+        class="own"
+        aria-pressed={owned}
+        aria-label={owned ? `Remove ${book.title} from your bookshelf` : `Add ${book.title} to your bookshelf`}
+        title={owned ? 'On your bookshelf (click to remove)' : 'I own this'}
+        onclick={() => setOwned(book, authorSlug, !owned)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5v15M9.5 4.5v15M14 6l4 13.5M3.5 19.5h17" /></svg>
+      </button>
       <button
         class="tick"
         aria-pressed={read}
@@ -88,7 +99,7 @@
     pointer-events: none;
   }
 
-  .tick {
+  .tick, .own {
     position: absolute;
     top: 6px;
     right: 6px;
@@ -104,14 +115,16 @@
     transition: opacity 0.15s, background 0.15s, transform 0.1s;
   }
 
-  .cover:hover .tick, .tick:focus-visible, .read .tick { opacity: 1; }
+  .own { right: auto; left: 6px; }
 
-  /* Touch screens have no hover, so always show the button there. */
-  @media (hover: none) { .tick { opacity: 1; } }
+  .cover:hover :is(.tick, .own), .tick:focus-visible, .own:focus-visible, .read .tick, .owned .own { opacity: 1; }
 
-  .tick:active { transform: scale(0.9); }
+  /* Touch screens have no hover, so always show the buttons there. */
+  @media (hover: none) { .tick, .own { opacity: 1; } }
 
-  .tick svg {
+  .tick:active, .own:active { transform: scale(0.9); }
+
+  .tick svg, .own svg {
     width: 18px;
     height: 18px;
     fill: none;
@@ -127,6 +140,13 @@
   }
 
   .read .tick svg { stroke: var(--accent-ink); }
+
+  .owned .own {
+    background: var(--owned);
+    border-color: var(--owned);
+  }
+
+  .owned .own svg { stroke: var(--owned-ink); }
 
   .title {
     display: block;

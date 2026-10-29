@@ -4,8 +4,9 @@
 //
 // Shape (version 2):
 //   books[bookId] = {
-//     title, authorSlug, coverId, coverRegion   snapshot for lists like the profile
+//     title, year, authorSlug, coverId, coverRegion   snapshot for lists like the profile
 //     quickRead: true?, quickReadAt,     ticked as read without a log
+//     owned: true?, ownedAt,             on your physical shelf; independent of reading
 //     shelf: 'reading' | 'tbr' | null, shelvedOn,
 //     reads: [{ id, startedOn, finishedOn, rating, review, loggedAt }]
 //   }
@@ -63,6 +64,7 @@ export function today() {
 function entry(book, authorSlug) {
   const e = (data.books[book.id] ??= { reads: [] });
   e.title = book.title;
+  e.year = book.year ?? e.year ?? null;
   e.authorSlug = authorSlug;
   e.coverId = book.coverId ?? null;
   e.coverRegion = book.coverRegion ?? null;
@@ -72,7 +74,7 @@ function entry(book, authorSlug) {
 // Drop entries with nothing left in them so they don't count anywhere.
 function prune(bookId) {
   const e = data.books[bookId];
-  if (e && !e.quickRead && !e.shelf && e.reads.length === 0) delete data.books[bookId];
+  if (e && !e.quickRead && !e.owned && !e.shelf && e.reads.length === 0) delete data.books[bookId];
 }
 
 const hasRead = (e) => !!e && (e.quickRead || e.reads.length > 0);
@@ -84,6 +86,32 @@ export const isRead = (bookId) => hasRead(data.books[bookId]);
 export const shelfOf = (bookId) => data.books[bookId]?.shelf ?? null;
 export const readCount = (bookIds) => bookIds.filter(isRead).length;
 export const totalRead = () => Object.values(data.books).filter(hasRead).length;
+export const isOwned = (bookId) => !!data.books[bookId]?.owned;
+export const ownedCount = (bookIds) => bookIds.filter(isOwned).length;
+export const totalOwned = () => Object.values(data.books).filter((e) => e.owned).length;
+
+// Every book you've read or own, as book-like objects for covers and links,
+// with when you last read it and when you got it.
+export function library() {
+  return Object.entries(data.books)
+    .filter(([, e]) => hasRead(e) || e.owned)
+    .map(([id, e]) => {
+      const reads = readsOf(id);
+      return {
+        id,
+        olWorkId: /^OL\d+W$/.test(id) ? id : null,
+        title: e.title,
+        year: e.year ?? null,
+        coverId: e.coverId,
+        coverRegion: e.coverRegion,
+        authorSlug: e.authorSlug,
+        read: hasRead(e),
+        owned: !!e.owned,
+        readOn: reads[0]?.finishedOn ?? e.quickReadAt?.slice(0, 10) ?? '',
+        ownedAt: e.ownedAt ?? '', // full timestamp, so books added the same day still sort
+      };
+    });
+}
 
 // Every book you've read, most recent first, with your latest rating.
 export function readBooks() {
@@ -143,6 +171,20 @@ export function setRead(book, authorSlug, read) {
     delete e.quickRead;
     delete e.quickReadAt;
     e.reads = [];
+  }
+  prune(book.id);
+  save();
+}
+
+// Owning a book is separate from reading it: unmarking one never touches the other.
+export function setOwned(book, authorSlug, owned) {
+  const e = entry(book, authorSlug);
+  if (owned) {
+    e.owned = true;
+    e.ownedAt = new Date().toISOString();
+  } else {
+    delete e.owned;
+    delete e.ownedAt;
   }
   prune(book.id);
   save();

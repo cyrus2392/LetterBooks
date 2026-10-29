@@ -1,7 +1,7 @@
 <script>
   import Cover from '../components/Cover.svelte';
   import Stars from '../components/Stars.svelte';
-  import { totalRead, shelf, diary, exportData, importData, dismissedCount, clearDismissed } from '../lib/store.svelte.js';
+  import { totalRead, totalOwned, shelf, diary, exportData, importData, dismissedCount, clearDismissed } from '../lib/store.svelte.js';
   import { formatDate } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -60,10 +60,14 @@
 <h1>Your profile</h1>
 
 <section class="stats">
-  <div class="stat">
+  <a class="stat" href={href('library', 'read')}>
     <div class="number">{totalRead()}</div>
     <div class="label">{totalRead() === 1 ? 'book' : 'books'} read</div>
-  </div>
+  </a>
+  <a class="stat" href={href('library', 'owned')}>
+    <div class="number owned">{totalOwned()}</div>
+    <div class="label">on your bookshelf</div>
+  </a>
   <div class="stat">
     <div class="number small">{reading.length}</div>
     <div class="label">reading now</div>
@@ -139,6 +143,12 @@
   }
 
   .number.small { font-size: 2.25rem; color: var(--text); }
+
+  .number.owned { color: var(--owned); }
+
+  a.stat { text-decoration: none; }
+
+  a.stat:hover { border-color: var(--accent); }
 
   .label { margin-top: 6px; color: var(--muted); font-weight: 600; }
 

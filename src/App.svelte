@@ -6,6 +6,7 @@
   import Profile from './pages/Profile.svelte';
   import Series from './pages/Series.svelte';
   import Search from './pages/Search.svelte';
+  import Library from './pages/Library.svelte';
 
   const page = $derived(route.parts[0] ?? '');
 
@@ -30,6 +31,7 @@
     </form>
     <nav>
       <a href={href()} class:active={page === '' || page === 'author' || page === 'series'}>Authors</a>
+      <a href={href('library')} class:active={page === 'library'}>Library</a>
       <a href={href('profile')} class:active={page === 'profile'}>Profile</a>
     </nav>
   </div>
@@ -44,6 +46,8 @@
     {#key route.parts.join('/')}<Series authorSlug={route.parts[1]} name={route.parts[2]} />{/key}
   {:else if page === 'search' && route.parts[1]}
     {#key route.parts[1]}<Search query={route.parts[1]} />{/key}
+  {:else if page === 'library'}
+    {#key route.parts[1]}<Library tab={route.parts[1] === 'read' ? 'read' : 'owned'} />{/key}
   {:else if page === 'profile'}
     <Profile />
   {:else}

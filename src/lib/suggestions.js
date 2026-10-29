@@ -3,6 +3,9 @@
 //   fromYourAuthors   popular books by authors you've read, starting series at book 1
 //   discover      popular books and authors in the genres you read, by authors you don't
 //
+// Each returns more than the page shows; the page filters out dismissed
+// suggestions and trims, so dismissing one brings in the next.
+//
 // Ratings steer everything: books you rated 4+ count double, 2 or less not at all.
 
 import { seriesOf } from './data.js';
@@ -54,7 +57,7 @@ export function upNext(authors, read, { isRead, isHidden, shelfOf }) {
       });
     }
   }
-  return out.sort((a, b) => a.recency - b.recency).slice(0, 12);
+  return out.sort((a, b) => a.recency - b.recency).slice(0, 24);
 }
 
 export function fromYourAuthors(authors, read, { isRead, isHidden, shelfOf }, exclude = new Set()) {
@@ -76,7 +79,7 @@ export function fromYourAuthors(authors, read, { isRead, isHidden, shelfOf }, ex
       out.push({ book, authorRef: author.slug, reason: `More from ${author.name}`, score: weight * Math.log1p(book.readers ?? 0) });
     }
   }
-  return out.sort((a, b) => b.score - a.score).slice(0, 12);
+  return out.sort((a, b) => b.score - a.score).slice(0, 30);
 }
 
 // The genres behind your reading, weighted by rating: [{ label, query, score, because }].
@@ -165,13 +168,13 @@ export async function discover(read, yourAuthorKeys, { isRead }) {
   const seenBookAuthors = new Set();
   const books = interleave(perGenre)
     .filter((b) => !seenBookAuthors.has(b.authorKey) && seenBookAuthors.add(b.authorKey))
-    .slice(0, 14);
+    .slice(0, 30);
 
   // Authors: the top few from each genre in turn, with their best books.
   const seenAuthors = new Set();
   const authors = interleave(perGenre)
     .filter((b) => !seenAuthors.has(b.authorKey) && seenAuthors.add(b.authorKey))
-    .slice(0, 6)
+    .slice(0, 14)
     .map((b) => ({
       key: b.authorKey,
       name: b.authorName,

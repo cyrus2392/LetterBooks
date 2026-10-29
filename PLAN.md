@@ -28,6 +28,7 @@ Letterboxd, but for books: log what you've read quickly and see your progress th
   - *More from your authors*: their most-read unread books (Open Library reader counts), starting unstarted series at book 1.
   - *Books / Authors you might like*: genres taken from your read books' Open Library subjects (each book counts towards its two most specific genres; genres are picked so every book is represented), then the most-read adult books since 1950 in those genres by authors you don't read yet, alternating between genres.
   - Ratings steer all of it: 4★+ books count double, 2★ or less not at all. Genre lookups are cached (subjects for a month, genre lists for a day).
+  - Every suggestion has a "Not interested" ✕ (with a few seconds to undo); dismissing a suggested author hides their books too, and the next suggestion moves up. The profile page can show hidden suggestions again.
 - **Author** (`#/author/stephen-king`, or `#/author/<Open Library key>` for live authors): series cards with progress, then a cover grid of every book (one entry per work, no editions), with "You've read X of Y (Z%)" and a progress bar. Each cover has a ✓ button to mark it read. "Edit list" hides strays; live authors can be added to your authors.
 - **Series** (`#/series/<author>/<name>`): the series in reading order with progress.
 - **Search** (`#/search/<query>`): your authors and curated books, plus authors and books on Open Library.

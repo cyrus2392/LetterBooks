@@ -11,6 +11,7 @@
 //   }
 //   following[olAuthorKey] = { name, followedAt }   authors added from search
 //   hidden[bookId] = true                           not counted on author pages
+//   dismissed['book:<id>' | 'author:<key>'] = true  suggestions you're not interested in
 // Dates are local 'YYYY-MM-DD' strings; ratings are 0.5–5 in half steps.
 
 const KEY = 'letterbooks:v1';
@@ -19,16 +20,16 @@ const VERSION = 2;
 export const SHELVES = { reading: 'Currently reading', tbr: 'Want to read' };
 
 // v1 only stored quick ticks: { status: 'read', markedReadAt, title, authorSlug }.
-// following and hidden were added within version 2, so they may be missing.
+// following, hidden and dismissed were added within version 2, so they may be missing.
 function migrate(saved) {
-  if (saved?.version === VERSION && saved.books) return { following: {}, hidden: {}, ...saved };
+  if (saved?.version === VERSION && saved.books) return { following: {}, hidden: {}, dismissed: {}, ...saved };
   if (saved?.version === 1 && saved.books) {
     const books = {};
     for (const [id, b] of Object.entries(saved.books)) {
       if (b.status !== 'read') continue;
       books[id] = { title: b.title, authorSlug: b.authorSlug, quickRead: true, quickReadAt: b.markedReadAt, reads: [] };
     }
-    return { version: VERSION, books, following: {}, hidden: {} };
+    return { version: VERSION, books, following: {}, hidden: {}, dismissed: {} };
   }
   return null;
 }
@@ -40,7 +41,7 @@ function load() {
   } catch {
     // Unavailable or corrupt storage: start empty.
   }
-  return { version: VERSION, books: {}, following: {}, hidden: {} };
+  return { version: VERSION, books: {}, following: {}, hidden: {}, dismissed: {} };
 }
 
 const data = $state(load());
@@ -202,6 +203,22 @@ export function setHidden(bookId, hidden) {
   save();
 }
 
+// Dismissed suggestions ("not interested"), keyed 'book:<id>' or 'author:<key>'.
+
+export const isDismissed = (key) => !!data.dismissed[key];
+export const dismissedCount = () => Object.keys(data.dismissed).length;
+
+export function setDismissed(key, dismissed) {
+  if (dismissed) data.dismissed[key] = true;
+  else delete data.dismissed[key];
+  save();
+}
+
+export function clearDismissed() {
+  data.dismissed = {};
+  save();
+}
+
 const clean = ({ startedOn, finishedOn, rating, review }) => ({
   startedOn: startedOn || null,
   finishedOn: finishedOn || null,
@@ -219,5 +236,6 @@ export function importData(json) {
   data.books = parsed.books;
   data.following = parsed.following;
   data.hidden = parsed.hidden;
+  data.dismissed = parsed.dismissed;
   save();
 }

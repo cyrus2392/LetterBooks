@@ -1,7 +1,7 @@
 <script>
   import Cover from '../components/Cover.svelte';
   import Stars from '../components/Stars.svelte';
-  import { totalRead, shelf, diary, exportData, importData } from '../lib/store.svelte.js';
+  import { totalRead, shelf, diary, exportData, importData, dismissedCount, clearDismissed } from '../lib/store.svelte.js';
   import { formatDate } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -111,6 +111,12 @@
     <input bind:this={fileInput} type="file" accept="application/json,.json" class="sr-only" onchange={upload} tabindex="-1" />
   </div>
   {#if message}<p role="status">{message}</p>{/if}
+  {#if dismissedCount()}
+    <p class="muted">
+      You've hidden {dismissedCount()} {dismissedCount() === 1 ? 'suggestion' : 'suggestions'} with “Not interested”.
+      <button class="link" onclick={clearDismissed}>Show them again</button>
+    </p>
+  {/if}
 </section>
 
 <style>
@@ -193,4 +199,12 @@
   .backup { margin-top: 48px; max-width: 560px; }
 
   .actions { display: flex; gap: 10px; }
+
+  .link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text);
+    text-decoration: underline;
+  }
 </style>

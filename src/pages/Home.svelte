@@ -2,7 +2,9 @@
   import Progress from '../components/Progress.svelte';
   import SuggestionRow from '../components/SuggestionRow.svelte';
   import { getYourAuthors, coverUrl } from '../lib/data.js';
-  import { readCount, isRead, isHidden, shelfOf, followedAuthors, readAuthorRefs, readBooks } from '../lib/store.svelte.js';
+  import {
+    readCount, isRead, isHidden, shelfOf, followedAuthors, readAuthorRefs, readBooks, isDismissed, setDismissed,
+  } from '../lib/store.svelte.js';
   import { upNext, fromYourAuthors, discover } from '../lib/suggestions.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -21,6 +23,22 @@
 
   const toItems = (suggestions) =>
     suggestions.map((s) => ({ book: s.book, href: href('book', s.authorRef, s.book.id), reason: s.reason }));
+
+  // "Not interested": hide a suggestion, with a few seconds to undo.
+  const visible = (items, limit) => items.filter((i) => !isDismissed(`book:${i.book.id}`)).slice(0, limit);
+  let undo = $state(null); // { key, label }
+  let undoTimer;
+  function dismiss(key, label) {
+    setDismissed(key, true);
+    undo = { key, label };
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => (undo = null), 6000);
+  }
+  function restore() {
+    setDismissed(undo.key, false);
+    undo = null;
+  }
+  const dismissBook = (item) => dismiss(`book:${item.book.id}`, item.book.title);
 </script>
 
 {#await authors}
@@ -29,10 +47,12 @@
   {@const next = upNext(authors, read, store)}
   {@const more = fromYourAuthors(authors, read, store, new Set(next.map((s) => s.book.id)))}
 
-  {#if next.length}
+  {@const nextItems = visible(toItems(next), 12)}
+  {@const moreItems = visible(toItems(more), 12)}
+  {#if nextItems.length}
     <section>
       <h2>Up next in your series</h2>
-      <SuggestionRow items={toItems(next)} />
+      <SuggestionRow items={nextItems} ondismiss={dismissBook} />
     </section>
   {/if}
 
@@ -59,10 +79,10 @@
     <p class="muted hint">Looking for someone else? Search for any author at the top of the page.</p>
   </section>
 
-  {#if more.length}
+  {#if moreItems.length}
     <section>
       <h2>More from your authors</h2>
-      <SuggestionRow items={toItems(more)} />
+      <SuggestionRow items={moreItems} ondismiss={dismissBook} />
     </section>
   {/if}
 
@@ -78,19 +98,30 @@
         <p class="muted">Finding books in the genres you read…</p>
       </section>
     {:then found}
-      {#if found.books.length}
+      {@const bookItems = visible(
+        found.books
+          .filter((b) => !isDismissed(`author:${b.authorKey}`))
+          .map((b) => ({ book: b, href: href('book', b.authorKey, b.id), reason: `${b.authorName} · ${b.reason}` })),
+        14,
+      )}
+      {@const authorItems = found.authors.filter((a) => !isDismissed(`author:${a.key}`)).slice(0, 6)}
+      {#if bookItems.length}
         <section>
           <h2>Books you might like</h2>
           <p class="muted sub">Popular in {found.genres.join(', ').toLowerCase()}, by authors you haven't read yet.</p>
-          <SuggestionRow items={found.books.map((b) => ({ book: b, href: href('book', b.authorKey, b.id), reason: `${b.authorName} · ${b.reason}` }))} />
+          <SuggestionRow items={bookItems} ondismiss={dismissBook} />
         </section>
       {/if}
-      {#if found.authors.length}
+      {#if authorItems.length}
         <section>
           <h2>Authors you might like</h2>
           <ul class="list">
-            {#each found.authors as a (a.key)}
-              <li>
+            {#each authorItems as a (a.key)}
+              <li class="suggested">
+                <button class="dismiss" aria-label="Not interested in {a.name}" title="Not interested"
+                        onclick={() => dismiss(`author:${a.key}`, a.name)}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>
                 <a class="card" href={href('author', a.key)}>
                   <div class="covers" aria-hidden="true">
                     {#each a.books.filter((b) => b.coverId) as book (book.id)}
@@ -114,6 +145,13 @@
 {:catch error}
   <p>{error.message}</p>
 {/await}
+
+{#if undo}
+  <div class="toast" role="status">
+    <span>Hid “{undo.label}” from suggestions.</span>
+    <button class="link" onclick={restore}>Undo</button>
+  </div>
+{/if}
 
 <style>
   section + section { margin-top: 40px; }
@@ -173,4 +211,65 @@
   h3 { font-size: 1.15rem; margin-bottom: 10px; }
 
   .reason { margin: -4px 0 0; font-size: 0.85rem; }
+
+  .suggested { position: relative; }
+
+  .suggested .card { padding-right: 44px; }
+
+  .dismiss {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    translate: 0 -50%;
+    z-index: 1;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+
+  .dismiss:hover { background: #c0392b; border-color: #c0392b; }
+
+  .dismiss svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+
+  .dismiss:hover svg { stroke: white; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    translate: -50% 0;
+    z-index: 10;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    max-width: calc(100vw - 32px);
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    background: var(--text);
+    color: var(--bg);
+    box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
+    font-size: 0.9rem;
+  }
+
+  .link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+  }
 </style>

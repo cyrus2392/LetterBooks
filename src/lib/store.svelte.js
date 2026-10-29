@@ -84,6 +84,11 @@ export const shelfOf = (bookId) => data.books[bookId]?.shelf ?? null;
 export const readCount = (bookIds) => bookIds.filter(isRead).length;
 export const totalRead = () => Object.values(data.books).filter(hasRead).length;
 
+// Authors you've read at least one book by, as refs (curated slug or Open Library key).
+export const readAuthorRefs = () => [
+  ...new Set(Object.values(data.books).filter(hasRead).map((e) => e.authorSlug).filter(Boolean)),
+];
+
 // Reads sorted newest first; reads without a finish date go last.
 export function readsOf(bookId) {
   const reads = data.books[bookId]?.reads ?? [];

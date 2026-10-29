@@ -1,20 +1,13 @@
 <script>
   import Progress from '../components/Progress.svelte';
-  import { getAuthors, getAuthor, coverUrl } from '../lib/data.js';
-  import { readCount, isHidden, followedAuthors } from '../lib/store.svelte.js';
+  import { getYourAuthors, coverUrl } from '../lib/data.js';
+  import { readCount, isHidden, followedAuthors, readAuthorRefs } from '../lib/store.svelte.js';
   import { href } from '../lib/router.svelte.js';
 
-  // Curated authors plus any you've added from search. Full author data is
-  // needed for per-author read counts (live ones come from the browser cache).
-  const authors = $derived.by(() => {
-    const followed = followedAuthors();
-    return getAuthors().then((curated) =>
-      Promise.all([
-        ...curated.map((a) => getAuthor(a.slug)),
-        ...followed.filter((f) => !curated.some((c) => c.olKey === f.olKey)).map((f) => getAuthor(f.olKey)),
-      ]),
-    );
-  });
+  // Curated authors, authors you've added, and anyone you've read a book by.
+  // Full author data is needed for per-author read counts (live ones come
+  // from the browser cache).
+  const authors = $derived(getYourAuthors([...followedAuthors().map((f) => f.olKey), ...readAuthorRefs()]));
 </script>
 
 <h1>Authors</h1>

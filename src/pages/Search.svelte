@@ -1,8 +1,8 @@
 <script>
   import Cover from '../components/Cover.svelte';
-  import { getAuthors, getAuthor } from '../lib/data.js';
+  import { getYourAuthors } from '../lib/data.js';
   import { searchAuthors, searchBooks, normalizeTitle } from '../lib/sources.js';
-  import { followedAuthors, isRead } from '../lib/store.svelte.js';
+  import { followedAuthors, readAuthorRefs, isRead } from '../lib/store.svelte.js';
   import { href } from '../lib/router.svelte.js';
 
   let { query } = $props();
@@ -10,20 +10,14 @@
   const needle = $derived(normalizeTitle(query));
   const matches = (text) => normalizeTitle(text).includes(needle);
 
-  // Instant results from authors you already have (curated + followed).
-  const local = $derived.by(() => {
-    const followed = followedAuthors();
-    return getAuthors().then(async (curated) => {
-      const authors = [
-        ...curated.map((a) => ({ ref: a.slug, olKey: a.olKey, name: a.name })),
-        ...followed.filter((f) => !curated.some((c) => c.olKey === f.olKey)).map((f) => ({ ref: f.olKey, olKey: f.olKey, name: f.name })),
-      ];
-      // Only curated books are searched locally; live authors' books come from Open Library below.
-      const books = (await Promise.all(curated.map((a) => getAuthor(a.slug))))
-        .flatMap((a) => a.books.filter((b) => matches(b.title)).map((b) => ({ ...b, authorRef: a.slug, authorName: a.name })));
-      return { authors: authors.filter((a) => matches(a.name)), books, knownKeys: new Set(authors.map((a) => a.olKey)) };
-    });
-  });
+  // Instant results from your authors (curated, added, or read).
+  const local = $derived(
+    getYourAuthors([...followedAuthors().map((f) => f.olKey), ...readAuthorRefs()]).then((authors) => ({
+      authors: authors.filter((a) => matches(a.name)).map((a) => ({ ref: a.slug, name: a.name })),
+      books: authors.flatMap((a) => a.books.filter((b) => matches(b.title)).map((b) => ({ ...b, authorRef: a.slug, authorName: a.name }))),
+      knownKeys: new Set(authors.map((a) => a.olKey)),
+    })),
+  );
 
   const remoteAuthors = $derived(searchAuthors(query));
   const remoteBooks = $derived(searchBooks(query));

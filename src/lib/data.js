@@ -64,6 +64,20 @@ export async function getAuthor(ref) {
   return getJson(`authors/${ref}.json`);
 }
 
+// Your authors: every curated author plus the given refs (authors you've
+// added, or read a book by), de-duplicated, loaded in full and sorted by
+// name. An author that fails to load is left out rather than breaking the list.
+export async function getYourAuthors(refs) {
+  const curated = await getAuthors();
+  const all = new Set(curated.map((a) => a.slug));
+  for (const ref of refs) all.add(curated.find((a) => a.olKey === ref)?.slug ?? ref);
+  const results = await Promise.allSettled([...all].map(getAuthor));
+  return results
+    .filter((r) => r.status === 'fulfilled')
+    .map((r) => r.value)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 // A book by its author ref and work id. Falls back to Open Library for works
 // that aren't in the author's list (e.g. filtered out, or found by search).
 export async function getBook(authorRef, bookId) {

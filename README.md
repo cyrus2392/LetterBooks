@@ -2,4 +2,4 @@
 
 Live at https://cyrus2392.github.io/LetterBooks/
 
-GitHub Pages serves the `gh-pages` branch.
+Every push to `main` deploys to GitHub Pages via `.github/workflows/pages.yml`.

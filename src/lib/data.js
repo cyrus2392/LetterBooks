@@ -2,7 +2,7 @@
 // scripts/import-author.mjs); any other author is built live from
 // Wikipedia + Open Library + Wikidata and cached in the browser for a week.
 
-import { buildAuthor, isOlAuthorKey, fetchWork, fetchUkCover } from './sources.js';
+import { buildAuthor, isOlAuthorKey, fetchWork, fetchUkCover, fetchBookDetails } from './sources.js';
 
 const base = import.meta.env.BASE_URL;
 const cache = new Map();
@@ -162,4 +162,24 @@ export function ukCoverId(workId) {
       return id;
     }),
   );
+}
+
+// Release date, synopsis and genres for a book page, remembered for a month.
+export function getBookDetails(book, authorName) {
+  return memo(`details:${book.id}`, async () => {
+    const storageKey = `letterbooks:cache:details:${book.id}`;
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey));
+      if (saved && Date.now() - saved.at < COVER_TTL) return saved.details;
+    } catch {
+      // No usable cache.
+    }
+    const details = await fetchBookDetails({ olWorkId: book.olWorkId, title: book.title, authorName });
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ at: Date.now(), details }));
+    } catch {
+      // Not cached.
+    }
+    return details;
+  });
 }

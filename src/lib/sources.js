@@ -415,3 +415,132 @@ export async function popularInGenre(query, limit = 60) {
       authorName: d.author_name?.[0] ?? 'Unknown',
     }));
 }
+
+// Book details: release date, synopsis and genres
+
+const WP = 'https://en.wikipedia.org';
+
+// Wikidata labels that are genres a reader would recognise (this also keeps
+// out trope labels, some of which are offensive).
+const GENRE_WORDS = /fiction|novel|fantasy|horror|thriller|mystery|romance|science|dystopi|apocalyp|crime|detective|gothic|historical|humou?r|satire|adventure|war |western|literary|young adult|children|memoir|biograph|essay|poetry|suspense|supernatural|epic|comedy|tragedy|bildungsroman|coming-of-age/i;
+
+// Wikidata facts about a book: its English Wikipedia article, first
+// publication date (most precise, then earliest) and genres.
+async function wikidataBook(where) {
+  const query = `
+    SELECT ?item ?article ?date ?precision ?genreLabel WHERE {
+      ${where}
+      OPTIONAL { ?item p:P577/psv:P577 [ wikibase:timeValue ?date ; wikibase:timePrecision ?precision ] }
+      OPTIONAL { ?article schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> }
+      OPTIONAL { ?item wdt:P136 ?genre }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    }`;
+  const { results } = await getJson(`${WIKIDATA}?format=json&query=${encodeURIComponent(query)}`, {
+    headers: { Accept: 'application/sparql-results+json' },
+  });
+  const rows = results.bindings;
+  if (!rows.length) return null;
+  const dates = rows
+    .filter((r) => r.date)
+    .map((r) => ({ date: r.date.value.slice(0, 10), precision: Number(r.precision.value) }))
+    .filter((d) => d.precision >= 9) // year or better
+    .sort((a, b) => b.precision - a.precision || a.date.localeCompare(b.date));
+  const genres = [...new Set(rows.map((r) => r.genreLabel?.value).filter((g) => g && GENRE_WORDS.test(g) && g !== 'fiction'))];
+  const article = rows.find((r) => r.article)?.article.value ?? null;
+  return { released: dates[0] ?? null, genres, article };
+}
+
+// The Wikipedia article for a book: the usual article titles first
+// ("Dune (novel)", "Rage (King novel)"), then a search. An article only
+// counts if it's about a book by this author, not a film or TV adaptation.
+async function findWikipediaArticle(title, authorName) {
+  const surname = authorName.split(' ').at(-1);
+  const isTheBook = (s) =>
+    s &&
+    s.extract.toLowerCase().includes(surname.toLowerCase()) &&
+    /\b(novels?|novellas?|book|collection|memoir|anthology|non-?fiction|picture book)\b/i.test(s.extract) &&
+    !/\b(film|television|tv series|miniseries|video game|musical|opera)\b/i.test(s.extract.split('. ')[0]);
+
+  const candidates = [`${title} (novel)`, `${title} (${surname} novel)`, `${title} (novella)`, `${title} (book)`, `${title} (collection)`, title];
+  const direct = await Promise.all(candidates.map(wikipediaSummary));
+  const found = direct.find(isTheBook);
+  if (found) return found;
+
+  const url = `${WP}/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(`${title} ${authorName}`)}&srlimit=3&format=json&origin=*`;
+  const { query } = await getJson(url);
+  for (const hit of query.search) {
+    if (!normalizeTitle(hit.title).startsWith(normalizeTitle(title.split(':')[0]))) continue;
+    const summary = await wikipediaSummary(hit.title);
+    if (isTheBook(summary)) return summary;
+  }
+  return null;
+}
+
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+
+// "published on October 6, 2026" / "released 5 April 1974" in Wikipedia's
+// summary, for books Wikidata doesn't have a date for yet.
+function dateFromText(text) {
+  const m =
+    text.match(/(?:published|released)(?: [a-z]+)?(?: on| in)? ([A-Z][a-z]+) (\d{1,2}), (\d{4})/) ??
+    text.match(/(?:published|released)(?: [a-z]+)?(?: on| in)? (\d{1,2}) ([A-Z][a-z]+) (\d{4})/);
+  if (!m) return null;
+  const [month, day] = /^\d/.test(m[1]) ? [m[2], m[1]] : [m[1], m[2]];
+  const mi = MONTHS.indexOf(month.toLowerCase());
+  if (mi < 0) return null;
+  return { date: `${m[3]}-${String(mi + 1).padStart(2, '0')}-${day.padStart(2, '0')}`, precision: 11 };
+}
+
+async function wikipediaSummary(title) {
+  try {
+    const s = await getJson(`${WP}/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, '_'))}`);
+    if (s.type === 'disambiguation' || !s.extract) return null;
+    return { title: s.title, extract: s.extract, url: s.content_urls?.desktop?.page, qid: s.wikibase_item ?? null };
+  } catch {
+    return null;
+  }
+}
+
+// Open Library descriptions are free text, often with Markdown links,
+// "Contains:" lists or source notes appended. Keep the prose.
+function cleanDescription(text) {
+  if (!text) return null;
+  const prose = text
+    .replace(/\r/g, '')
+    .split(/\n-{3,}|\n\s*(Contains|See also|Also contained in|Source|\(\[source\])/i)[0]
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // [text](url) -> text
+    .replace(/\[\d+\]:\s*\S+/g, '') // [1]: url
+    .replace(/[*_]{1,2}([^*_]+)[*_]{1,2}/g, '$1') // *emphasis*
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return prose.length >= 60 ? prose : null;
+}
+
+// Release date, synopsis and genres for a book, from Wikidata (linked by
+// Open Library work id, or via the book's Wikipedia article), Open Library's
+// description and Wikipedia's summary. Every part is optional.
+export async function fetchBookDetails({ olWorkId, title, authorName }) {
+  const [wd, work] = await Promise.all([
+    olWorkId ? wikidataBook(`?item wdt:P648 "${olWorkId}" .`).catch(() => null) : null,
+    olWorkId ? getJson(`${OL}/works/${olWorkId}.json`).catch(() => null) : null,
+  ]);
+
+  let facts = wd;
+  let wiki = facts?.article ? await wikipediaSummary(decodeURIComponent(facts.article.split('/wiki/')[1])) : null;
+  if (!wiki) wiki = await findWikipediaArticle(title, authorName).catch(() => null);
+  if (!facts && wiki?.qid) facts = await wikidataBook(`VALUES ?item { wd:${wiki.qid} }`).catch(() => null);
+
+  const blurb = cleanDescription(typeof work?.description === 'string' ? work.description : work?.description?.value);
+  const synopsis = blurb
+    ? { text: blurb, source: 'Open Library', url: `https://openlibrary.org/works/${olWorkId}` }
+    : wiki
+      ? { text: wiki.extract, source: 'Wikipedia', url: wiki.url }
+      : null;
+
+  return {
+    released: facts?.released ?? (wiki ? dateFromText(wiki.extract) : null),
+    genres: facts?.genres ?? [],
+    synopsis,
+    wikipediaUrl: wiki?.url ?? null,
+  };
+}

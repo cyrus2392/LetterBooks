@@ -2,9 +2,10 @@
   import Cover from '../components/Cover.svelte';
   import Stars from '../components/Stars.svelte';
   import LogReadDialog from '../components/LogReadDialog.svelte';
+  import LendDialog from '../components/LendDialog.svelte';
   import { getBook, TYPE_LABELS } from '../lib/data.js';
-  import { isRead, isOwned, setOwned, shelfOf, setShelf, readsOf, latestRating, getEntry } from '../lib/store.svelte.js';
-  import { toggleRead } from '../lib/actions.js';
+  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned } from '../lib/store.svelte.js';
+  import { toggleRead, toggleOwned } from '../lib/actions.js';
   import { formatDate } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -14,6 +15,7 @@
 
   // null when closed; { editing: read | null } when the log dialog is open.
   let logging = $state(null);
+  let lending = $state(false);
 </script>
 
 {#await loaded}
@@ -50,7 +52,7 @@
         <button class="btn" class:on={read} aria-pressed={read} onclick={() => toggleRead(book, author.slug)}>
           {read ? '✓ Read' : 'Mark as read'}
         </button>
-        <button class="btn" class:owned aria-pressed={owned} onclick={() => setOwned(book, author.slug, !owned)}>
+        <button class="btn" class:owned aria-pressed={owned} onclick={() => toggleOwned(book, author.slug)}>
           {owned ? '📚 On your bookshelf' : 'I own this'}
         </button>
         <button class="btn" class:on={current === 'reading'} aria-pressed={current === 'reading'}
@@ -66,6 +68,18 @@
         </button>
       </div>
 
+      {#if owned}
+        {@const loan = lentTo(book.id)}
+        <p class="status lending">
+          {#if loan}
+            📤 Lent to <strong>{loan.to}</strong> since {formatDate(loan.on)}
+            <button class="btn small" onclick={() => markReturned(book.id)}>Mark as returned</button>
+            <button class="link" onclick={() => (lending = true)}>Edit</button>
+          {:else}
+            <button class="btn small" onclick={() => (lending = true)}>📤 Lend this book</button>
+          {/if}
+        </p>
+      {/if}
       {#if current === 'reading'}
         <p class="status">📖 Reading since {formatDate(getEntry(book.id).shelvedOn)}</p>
       {:else if current === 'tbr'}
@@ -100,6 +114,20 @@
         </section>
       {/if}
 
+      {#if loansOf(book.id).length}
+        <section class="reads">
+          <h2>Lending history</h2>
+          <ol>
+            {#each loansOf(book.id) as l, i (i)}
+              <li class="loan">
+                <strong>{l.to}</strong>
+                <span class="muted">{formatDate(l.lentOn)} – {formatDate(l.returnedOn)}</span>
+              </li>
+            {/each}
+          </ol>
+        </section>
+      {/if}
+
       {#if book.olWorkId}
         <p class="source muted">
           <a href="https://openlibrary.org/works/{book.olWorkId}" target="_blank" rel="noopener">View on Open Library</a>
@@ -107,6 +135,10 @@
       {/if}
     </div>
   </article>
+
+  {#if lending}
+    <LendDialog {book} onclose={() => (lending = false)} />
+  {/if}
 
   {#if logging}
     <LogReadDialog {book} authorSlug={author.slug} editing={logging.editing} onclose={() => (logging = null)} />
@@ -158,6 +190,12 @@
   }
 
   .status { margin: 6px 0; display: flex; align-items: center; gap: 8px; }
+
+  .lending { flex-wrap: wrap; margin-bottom: 12px; }
+
+  .btn.small { padding: 4px 10px; font-size: 0.85rem; }
+
+  .loan { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 10px 0; }
 
   .reads { margin-top: 32px; max-width: 640px; }
 

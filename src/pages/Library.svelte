@@ -20,6 +20,7 @@
       ['all', 'All'],
       ['unread', 'Not read yet'],
       ['read', 'Read'],
+      ['lent', 'Lent out'],
     ],
     read: [
       ['all', 'All'],
@@ -27,7 +28,14 @@
       ['notowned', "Don't own"],
     ],
   };
-  const TESTS = { all: () => true, unread: (b) => !b.read, read: (b) => b.read, owned: (b) => b.owned, notowned: (b) => !b.owned };
+  const TESTS = {
+    all: () => true,
+    unread: (b) => !b.read,
+    read: (b) => b.read,
+    lent: (b) => !!b.lent,
+    owned: (b) => b.owned,
+    notowned: (b) => !b.owned,
+  };
 
   const shown = $derived.by(() => {
     const list = (tab === 'read' ? read : owned).filter(TESTS[filter] ?? TESTS.all);
@@ -42,6 +50,7 @@
 <p class="summary muted">
   You own <strong>{owned.length}</strong> {owned.length === 1 ? 'book' : 'books'} and have read <strong>{read.length}</strong>.
   {#if owned.length}<strong>{owned.filter((b) => !b.read).length}</strong> on your shelf {owned.filter((b) => !b.read).length === 1 ? "isn't" : "aren't"} read yet.{/if}
+  {#if owned.some((b) => b.lent)}<strong>{owned.filter((b) => b.lent).length}</strong> {owned.filter((b) => b.lent).length === 1 ? 'is' : 'are'} lent out.{/if}
 </p>
 
 <nav class="tabs" aria-label="Library">

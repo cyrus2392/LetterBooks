@@ -1,8 +1,8 @@
 <script>
   import Cover from './Cover.svelte';
   import { href } from '../lib/router.svelte.js';
-  import { isRead, isOwned, setOwned, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
-  import { toggleRead } from '../lib/actions.js';
+  import { isRead, isOwned, lentTo, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
+  import { toggleRead, toggleOwned } from '../lib/actions.js';
 
   // Two toggles on the cover: owned (top left) and read (top right).
   // `editing` swaps them for a hide/restore button; `label` is shown above
@@ -10,6 +10,7 @@
   let { book, authorSlug, editing = false, label = null } = $props();
   const read = $derived(isRead(book.id));
   const owned = $derived(isOwned(book.id));
+  const loan = $derived(lentTo(book.id));
   const current = $derived(shelfOf(book.id));
   const hidden = $derived(isHidden(book.id));
 </script>
@@ -19,7 +20,9 @@
     <a href={href('book', authorSlug, book.id)} aria-label="{book.title} ({book.year})">
       <Cover {book} />
     </a>
-    {#if current === 'reading'}
+    {#if loan}
+      <span class="shelf lent" title="Lent to {loan.to}">Lent · {loan.to}</span>
+    {:else if current === 'reading'}
       <span class="shelf">Reading</span>
     {:else if current === 'tbr'}
       <span class="shelf">Want to read</span>
@@ -43,7 +46,7 @@
         aria-pressed={owned}
         aria-label={owned ? `Remove ${book.title} from your bookshelf` : `Add ${book.title} to your bookshelf`}
         title={owned ? 'On your bookshelf (click to remove)' : 'I own this'}
-        onclick={() => setOwned(book, authorSlug, !owned)}
+        onclick={() => toggleOwned(book, authorSlug)}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5v15M9.5 4.5v15M14 6l4 13.5M3.5 19.5h17" /></svg>
       </button>
@@ -97,6 +100,14 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     pointer-events: none;
+  }
+
+  .shelf.lent {
+    background: var(--owned);
+    color: var(--owned-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .tick, .own {

@@ -7,6 +7,8 @@
 //     title, year, authorSlug, coverId, coverRegion   snapshot for lists like the profile
 //     quickRead: true?, quickReadAt,     ticked as read without a log
 //     owned: true?, ownedAt,             on your physical shelf; independent of reading
+//     lent: { to, on }?                  currently lent out (owned books only)
+//     loans: [{ to, lentOn, returnedOn }]   past loans, oldest first
 //     shelf: 'reading' | 'tbr' | null, shelvedOn,
 //     reads: [{ id, startedOn, finishedOn, rating, review, loggedAt }]
 //   }
@@ -62,7 +64,8 @@ export function today() {
 
 // Get the entry for a book, creating it if needed, and refresh its snapshot.
 function entry(book, authorSlug) {
-  const e = (data.books[book.id] ??= { reads: [] });
+  data.books[book.id] ??= { reads: [] };
+  const e = data.books[book.id]; // read back the reactive copy, not the literal above
   e.title = book.title;
   e.year = book.year ?? e.year ?? null;
   e.authorSlug = authorSlug;
@@ -107,6 +110,7 @@ export function library() {
         authorSlug: e.authorSlug,
         read: hasRead(e),
         owned: !!e.owned,
+        lent: e.lent ?? null,
         readOn: reads[0]?.finishedOn ?? e.quickReadAt?.slice(0, 10) ?? '',
         ownedAt: e.ownedAt ?? '', // full timestamp, so books added the same day still sort
       };
@@ -183,10 +187,51 @@ export function setOwned(book, authorSlug, owned) {
     e.owned = true;
     e.ownedAt = new Date().toISOString();
   } else {
+    // A book you don't own can't be out on loan; callers confirm first.
     delete e.owned;
     delete e.ownedAt;
+    delete e.lent;
   }
   prune(book.id);
+  save();
+}
+
+// Lending (owned books only)
+
+export const lentTo = (bookId) => data.books[bookId]?.lent ?? null;
+
+// Past loans, most recent first.
+export const loansOf = (bookId) => [...(data.books[bookId]?.loans ?? [])].reverse();
+
+// Everyone you've lent to, most recent first, for suggesting names.
+export function borrowers() {
+  const all = Object.values(data.books).flatMap((e) => [
+    ...(e.lent ? [{ to: e.lent.to, on: e.lent.on }] : []),
+    ...(e.loans ?? []).map((l) => ({ to: l.to, on: l.lentOn })),
+  ]);
+  all.sort((a, b) => b.on.localeCompare(a.on));
+  return [...new Set(all.map((l) => l.to))];
+}
+
+export const totalLent = () => Object.values(data.books).filter((e) => e.owned && e.lent).length;
+
+// Lend a book, or change who/when for the current loan.
+export function lend(bookId, to, on) {
+  const e = data.books[bookId];
+  if (!e?.owned) return;
+  e.lent = { to: to.trim(), on };
+  save();
+}
+
+// The book's back: move the current loan into its history.
+export function markReturned(bookId, returnedOn = today()) {
+  const e = data.books[bookId];
+  if (!e?.lent) return;
+  // Assign first, then push: `(e.loans ??= []).push()` would push onto the
+  // plain array rather than the reactive copy stored on `e`.
+  e.loans ??= [];
+  e.loans.push({ to: e.lent.to, lentOn: e.lent.on, returnedOn });
+  delete e.lent;
   save();
 }
 

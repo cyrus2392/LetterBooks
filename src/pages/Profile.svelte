@@ -9,7 +9,7 @@
   let fileInput = $state();
 
   // Book-like object for <Cover> from a stored snapshot.
-  const asBook = (id, e) => ({ title: e.title, coverId: e.coverId, coverRegion: e.coverRegion, olWorkId: /^OL\d+W$/.test(id) ? id : null });
+  const asBook = (id, e) => ({ id, title: e.title, coverId: e.coverId, coverRegion: e.coverRegion, olWorkId: /^OL\d+W$/.test(id) ? id : null });
 
   const reading = $derived(shelf('reading'));
   const tbr = $derived(shelf('tbr'));

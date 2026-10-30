@@ -1,7 +1,7 @@
 <script>
   import Cover from './Cover.svelte';
   import { href } from '../lib/router.svelte.js';
-  import { isRead, isOwned, lentTo, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
+  import { isRead, isOwned, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
 
   // Two toggles on the cover: owned (top left) and read (top right).
@@ -10,7 +10,6 @@
   let { book, authorSlug, editing = false, label = null } = $props();
   const read = $derived(isRead(book.id));
   const owned = $derived(isOwned(book.id));
-  const loan = $derived(lentTo(book.id));
   const current = $derived(shelfOf(book.id));
   const hidden = $derived(isHidden(book.id));
 </script>
@@ -20,9 +19,7 @@
     <a href={href('book', authorSlug, book.id)} aria-label="{book.title} ({book.year})">
       <Cover {book} />
     </a>
-    {#if loan}
-      <span class="shelf lent" title="Lent to {loan.to}">Lent · {loan.to}</span>
-    {:else if current === 'reading'}
+    {#if current === 'reading'}
       <span class="shelf">Reading</span>
     {:else if current === 'tbr'}
       <span class="shelf">Want to read</span>
@@ -100,14 +97,6 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     pointer-events: none;
-  }
-
-  .shelf.lent {
-    background: var(--owned);
-    color: var(--owned-ink);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .tick, .own {

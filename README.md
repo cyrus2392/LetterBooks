@@ -20,3 +20,8 @@ Any author can be found with the site's search and gets an automatic page from t
 1. Run `npm run add-author -- "Author Name"` to draft `data/curation/<author-slug>.json`, then review it: remove novellas, duplicates and bundles, and fix years, types and series. (Or create or edit `data/curation/<author-slug>.json` by hand; see `stephen-king.json`.)
 2. Run `npm run import-author -- <author-slug>`.
 3. Fix anything it reports as unmatched or missing a cover by adding `olKey` or `coverId` to that book in the curation file, then run it again.
+
+## Credits
+
+- Book data: [Wikipedia](https://en.wikipedia.org), [Open Library](https://openlibrary.org) and [Wikidata](https://www.wikidata.org).
+- Icons: [Font Awesome Free](https://fontawesome.com), licensed [CC BY 4.0](https://fontawesome.com/license/free).

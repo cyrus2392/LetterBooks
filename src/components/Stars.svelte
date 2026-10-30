@@ -2,7 +2,10 @@
   // Star rating, 0.5–5 in half steps. Read-only unless `onchange` is passed.
   // Interactive: click the left or right half of a star; arrow keys step by
   // half a star; clicking the current rating again clears it.
+  import { faStar } from '@fortawesome/free-solid-svg-icons';
+
   let { value = null, onchange, size = 20, label = 'Rating' } = $props();
+  const [starW, starH, , , starPath] = faStar.icon;
 
   let hover = $state(null);
   const shown = $derived(hover ?? value ?? 0);
@@ -32,11 +35,11 @@
 </script>
 
 {#snippet star(fill)}
-  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-    <path class="empty" d="M12 2.5l2.9 6.2 6.8.8-5 4.6 1.3 6.7L12 17.5l-6 3.3 1.3-6.7-5-4.6 6.8-.8z" />
+  <svg viewBox="0 0 {starW} {starH}" width={size} height={size} aria-hidden="true">
+    <path class="empty" d={starPath} />
     {#if fill > 0}
       <path class="full" class:half={fill < 1}
-            d="M12 2.5l2.9 6.2 6.8.8-5 4.6 1.3 6.7L12 17.5l-6 3.3 1.3-6.7-5-4.6 6.8-.8z" />
+            d={starPath} />
     {/if}
   </svg>
 {/snippet}

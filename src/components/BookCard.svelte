@@ -1,5 +1,7 @@
 <script>
   import Cover from './Cover.svelte';
+  import Icon from './Icon.svelte';
+  import { faCheck, faBook, faXmark, faPlus } from '@fortawesome/free-solid-svg-icons';
   import { href } from '../lib/router.svelte.js';
   import { isRead, isOwned, shelfOf, isHidden, setHidden } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
@@ -32,9 +34,9 @@
         onclick={() => setHidden(book.id, !hidden)}
       >
         {#if hidden}
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          <Icon icon={faPlus} />
         {:else}
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <Icon icon={faXmark} />
         {/if}
       </button>
     {:else}
@@ -45,7 +47,7 @@
         title={owned ? 'On your bookshelf (click to remove)' : 'I own this'}
         onclick={() => toggleOwned(book, authorSlug)}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5v15M9.5 4.5v15M14 6l4 13.5M3.5 19.5h17" /></svg>
+        <Icon icon={faBook} />
       </button>
       <button
         class="tick"
@@ -54,7 +56,7 @@
         title={read ? 'Read (click to undo)' : 'Mark as read'}
         onclick={() => toggleRead(book, authorSlug)}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+        <Icon icon={faCheck} />
       </button>
     {/if}
   </div>
@@ -111,6 +113,8 @@
     border-radius: 50%;
     border: 2px solid rgb(255 255 255 / 0.85);
     background: rgb(0 0 0 / 0.55);
+    color: white;
+    font-size: 15px;
     opacity: 0;
     transition: opacity 0.15s, background 0.15s, transform 0.1s;
   }
@@ -124,29 +128,17 @@
 
   .tick:active, .own:active { transform: scale(0.9); }
 
-  .tick svg, .own svg {
-    width: 18px;
-    height: 18px;
-    fill: none;
-    stroke: white;
-    stroke-width: 3;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
   .read .tick {
     background: var(--accent);
     border-color: var(--accent);
+    color: var(--accent-ink);
   }
-
-  .read .tick svg { stroke: var(--accent-ink); }
 
   .owned .own {
     background: var(--owned);
     border-color: var(--owned);
+    color: var(--owned-ink);
   }
-
-  .owned .own svg { stroke: var(--owned-ink); }
 
   .title {
     display: block;
@@ -170,7 +162,7 @@
     border-color: rgb(255 255 255 / 0.85);
   }
 
-  .tick.hide svg, .read .tick.hide svg { stroke: white; }
+  .tick.hide, .read .tick.hide { color: white; }
 
   .tick.hide:hover { background: #c0392b; }
 

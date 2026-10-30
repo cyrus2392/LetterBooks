@@ -1,5 +1,7 @@
 <script>
   import Cover from '../components/Cover.svelte';
+  import Icon from '../components/Icon.svelte';
+  import { faCheck } from '@fortawesome/free-solid-svg-icons';
   import { getYourAuthors } from '../lib/data.js';
   import { searchAuthors, searchBooks, normalizeTitle } from '../lib/sources.js';
   import { followedAuthors, readAuthorRefs, isRead } from '../lib/store.svelte.js';
@@ -32,7 +34,7 @@
         <a href={href('book', b.authorRef, b.id)}>
           <div class="thumb"><Cover book={b} size="S" /></div>
           <div>
-            <div class="title">{b.title} {#if isRead(b.id)}<span class="read" title="Read">✓</span>{/if}</div>
+            <div class="title">{b.title} {#if isRead(b.id)}<span class="read" title="Read"><Icon icon={faCheck} label="Read" /></span>{/if}</div>
             <div class="muted">{b.authorName}{#if b.year} · {b.year}{/if}</div>
           </div>
         </a>

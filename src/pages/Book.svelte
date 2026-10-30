@@ -3,6 +3,8 @@
   import Stars from '../components/Stars.svelte';
   import LogReadDialog from '../components/LogReadDialog.svelte';
   import LendDialog from '../components/LendDialog.svelte';
+  import Icon from '../components/Icon.svelte';
+  import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
   import { getBook, TYPE_LABELS } from '../lib/data.js';
   import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
@@ -50,18 +52,22 @@
 
       <div class="actions" role="group" aria-label="Your reading">
         <button class="btn" class:on={read} aria-pressed={read} onclick={() => toggleRead(book, author.slug)}>
-          {read ? '✓ Read' : 'Mark as read'}
+          <Icon icon={faCheck} />
+          {read ? 'Read' : 'Mark as read'}
         </button>
         <button class="btn" class:owned aria-pressed={owned} onclick={() => toggleOwned(book, author.slug)}>
-          {owned ? '📚 On your bookshelf' : 'I own this'}
+          <Icon icon={faBook} />
+          {owned ? 'On your bookshelf' : 'I own this'}
         </button>
         <button class="btn" class:on={current === 'reading'} aria-pressed={current === 'reading'}
                 onclick={() => setShelf(book, author.slug, current === 'reading' ? null : 'reading')}>
-          {current === 'reading' ? '📖 Reading' : 'Currently reading'}
+          <Icon icon={faBookOpenReader} />
+          {current === 'reading' ? 'Reading' : 'Currently reading'}
         </button>
         <button class="btn" class:on={current === 'tbr'} aria-pressed={current === 'tbr'}
                 onclick={() => setShelf(book, author.slug, current === 'tbr' ? null : 'tbr')}>
-          {current === 'tbr' ? '🔖 Want to read' : 'Want to read'}
+          <Icon icon={faBookmark} />
+          Want to read
         </button>
         <button class="btn primary" onclick={() => (logging = { editing: null })}>
           {reads.length ? 'Log a re-read' : 'Log a read'}
@@ -72,18 +78,18 @@
         {@const loan = lentTo(book.id)}
         <p class="status lending">
           {#if loan}
-            📤 Lent to <strong>{loan.to}</strong> since {formatDate(loan.on)}
-            <button class="btn small" onclick={() => markReturned(book.id)}>Mark as returned</button>
+            <Icon icon={faHandHolding} /> Lent to <strong>{loan.to}</strong> since {formatDate(loan.on)}
+            <button class="btn small" onclick={() => markReturned(book.id)}><Icon icon={faRotateLeft} /> Mark as returned</button>
             <button class="link" onclick={() => (lending = true)}>Edit</button>
           {:else}
-            <button class="btn small" onclick={() => (lending = true)}>📤 Lend this book</button>
+            <button class="btn small" onclick={() => (lending = true)}><Icon icon={faHandHolding} /> Lend this book</button>
           {/if}
         </p>
       {/if}
       {#if current === 'reading'}
-        <p class="status">📖 Reading since {formatDate(getEntry(book.id).shelvedOn)}</p>
+        <p class="status"><Icon icon={faBookOpenReader} /> Reading since {formatDate(getEntry(book.id).shelvedOn)}</p>
       {:else if current === 'tbr'}
-        <p class="status">🔖 On your want-to-read list since {formatDate(getEntry(book.id).shelvedOn)}</p>
+        <p class="status"><Icon icon={faBookmark} /> On your want-to-read list since {formatDate(getEntry(book.id).shelvedOn)}</p>
       {/if}
       {#if rating}
         <p class="status">Your rating <Stars value={rating} size={18} /></p>

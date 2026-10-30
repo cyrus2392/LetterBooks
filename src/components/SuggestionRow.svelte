@@ -2,6 +2,8 @@
   // A horizontally scrolling row of suggested books: [{ book, href, reason }].
   // With `ondismiss`, each cover gets a "not interested" button.
   import Cover from './Cover.svelte';
+  import Icon from './Icon.svelte';
+  import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
   let { items, ondismiss } = $props();
 </script>
@@ -14,7 +16,7 @@
         {#if ondismiss}
           <button class="dismiss" aria-label="Not interested in {item.book.title}" title="Not interested"
                   onclick={() => ondismiss(item)}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            <Icon icon={faXmark} />
           </button>
         {/if}
       </div>
@@ -63,6 +65,8 @@
     border-radius: 50%;
     border: 1.5px solid rgb(255 255 255 / 0.85);
     background: rgb(0 0 0 / 0.6);
+    color: white;
+    font-size: 13px;
     opacity: 0;
     transition: opacity 0.15s, background 0.15s;
   }
@@ -74,14 +78,6 @@
 
   .dismiss:hover { background: #c0392b; }
 
-  .dismiss svg {
-    width: 14px;
-    height: 14px;
-    fill: none;
-    stroke: white;
-    stroke-width: 3;
-    stroke-linecap: round;
-  }
 
   .title {
     display: block;

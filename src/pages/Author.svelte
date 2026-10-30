@@ -1,5 +1,7 @@
 <script>
   import BookCard from '../components/BookCard.svelte';
+  import Icon from '../components/Icon.svelte';
+  import { faCheck, faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
   import Progress from '../components/Progress.svelte';
   import SeriesCard from '../components/SeriesCard.svelte';
   import { getAuthor, seriesOf } from '../lib/data.js';
@@ -43,7 +45,8 @@
         {#if author.live}
           <button class="btn" class:primary={!following} aria-pressed={following}
                   onclick={() => setFollowing(author.olKey, author.name, !following)}>
-            {following ? '✓ On your authors list' : '+ Add to your authors'}
+            <Icon icon={following ? faCheck : faPlus} />
+            {following ? 'On your authors list' : 'Add to your authors'}
           </button>
         {/if}
         <button class="btn" aria-pressed={editing} onclick={() => (editing = !editing)}>
@@ -66,7 +69,7 @@
     </p>
   {/if}
   {#if editing}
-    <p class="notice">Click ✕ on a cover to hide it. Hidden books don't count towards your totals for this author.</p>
+    <p class="notice">Click <Icon icon={faXmark} label="the hide button" /> on a cover to hide it. Hidden books don't count towards your totals for this author.</p>
   {/if}
 
   <input

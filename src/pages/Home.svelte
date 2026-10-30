@@ -1,6 +1,8 @@
 <script>
   import Progress from '../components/Progress.svelte';
   import SuggestionRow from '../components/SuggestionRow.svelte';
+  import Icon from '../components/Icon.svelte';
+  import { faXmark } from '@fortawesome/free-solid-svg-icons';
   import { getYourAuthors, coverUrl } from '../lib/data.js';
   import {
     readCount, isRead, isHidden, shelfOf, followedAuthors, readAuthorRefs, readBooks, isDismissed, setDismissed,
@@ -120,7 +122,7 @@
               <li class="suggested">
                 <button class="dismiss" aria-label="Not interested in {a.name}" title="Not interested"
                         onclick={() => dismiss(`author:${a.key}`, a.name)}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                  <Icon icon={faXmark} />
                 </button>
                 <a class="card" href={href('author', a.key)}>
                   <div class="covers" aria-hidden="true">
@@ -231,20 +233,12 @@
     border: 1px solid var(--border);
     background: var(--surface-2);
     color: var(--muted);
+    font-size: 13px;
   }
 
   .dismiss:hover { background: #c0392b; border-color: #c0392b; }
 
-  .dismiss svg {
-    width: 14px;
-    height: 14px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-  }
-
-  .dismiss:hover svg { stroke: white; }
+  .dismiss:hover { color: white; }
 
   .toast {
     position: fixed;

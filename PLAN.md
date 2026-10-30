@@ -5,6 +5,7 @@ Letterboxd, but for books: log what you've read quickly and see your progress th
 ## Decisions
 
 - **Single user for now.** Reading data is stored in the browser (localStorage), with export/import on the profile page. All storage goes through `src/lib/store.svelte.js`, so swapping in Supabase for accounts later only touches that module.
+- **Icons, not emoji.** All icons come from Font Awesome Free (solid set), imported one by one so only the ones used are bundled, and drawn by `src/components/Icon.svelte`. The app uses no emoji.
 - **Static site on GitHub Pages.** Built with Vite + Svelte. GitHub Actions builds and deploys on every push to `main`.
 - **Book data from APIs, not scraping.** Bibliographies come from Wikipedia (its "<Author> bibliography" articles are human-maintained lists of real books). Open Library provides works (the "parent version" of a title) and covers; Wikidata provides series positions. Goodreads/Amazon scraping is against their terms and brittle.
 - **UK covers.** Each book's cover comes from the newest UK edition on Open Library that has one (UK place, publisher or MARC country code), falling back to the work's default cover. Curated authors get theirs at import time; live authors look them up as covers scroll into view, cached for a month.

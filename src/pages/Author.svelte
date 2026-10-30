@@ -4,13 +4,20 @@
   import SeriesCard from '../components/SeriesCard.svelte';
   import { getAuthor, seriesOf } from '../lib/data.js';
   import { readCount, ownedCount, isHidden, isFollowing, setFollowing } from '../lib/store.svelte.js';
-  import { isOlAuthorKey } from '../lib/sources.js';
+  import { isOlAuthorKey, normalizeTitle } from '../lib/sources.js';
 
   let { slug } = $props();
   const author = $derived(getAuthor(slug));
 
   let editing = $state(false);
   let showHidden = $state(false);
+
+  // Search within this author's books, by title or series name, ignoring
+  // case, punctuation and a leading "The"/"A".
+  let query = $state('');
+  const needle = $derived(normalizeTitle(query.trim()));
+  const matches = (book) =>
+    normalizeTitle(book.title).includes(needle) || (book.series ?? []).some((s) => normalizeTitle(s.name).includes(needle));
 </script>
 
 {#await author}
@@ -23,6 +30,8 @@
   {@const ids = visible.map((b) => b.id)}
   {@const series = seriesOf({ books: visible })}
   {@const following = author.live && isFollowing(author.olKey)}
+  {@const searching = needle.length > 0}
+  {@const found = searching ? visible.filter(matches) : visible}
 
   <section class="head">
     <div>
@@ -60,7 +69,16 @@
     <p class="notice">Click ✕ on a cover to hide it. Hidden books don't count towards your totals for this author.</p>
   {/if}
 
-  {#if series.length}
+  <input
+    type="search"
+    class="book-search"
+    bind:value={query}
+    placeholder="Search {author.name}'s books"
+    aria-label="Search {author.name}'s books by title or series"
+    onkeydown={(e) => e.key === 'Escape' && (query = '')}
+  />
+
+  {#if series.length && !searching}
     <section class="series">
       <h2>Series</h2>
       <div class="series-grid">
@@ -72,12 +90,19 @@
   {/if}
 
   <section>
-    <h2>All books</h2>
-    <div class="grid" aria-label="Books by {author.name}">
-      {#each visible as book (book.id)}
-        <BookCard {book} authorSlug={author.slug} {editing} />
-      {/each}
-    </div>
+    <h2>{searching ? `${found.length} of ${visible.length} books match` : 'All books'}</h2>
+    {#if found.length}
+      <div class="grid" aria-label="Books by {author.name}">
+        {#each found as book (book.id)}
+          <BookCard {book} authorSlug={author.slug} {editing} />
+        {/each}
+      </div>
+    {:else}
+      <p class="muted">
+        No {author.name} books match “{query.trim()}”.
+        <button class="link" onclick={() => (query = '')}>Clear search</button>
+      </p>
+    {/if}
   </section>
 
   {#if hidden.length}
@@ -127,6 +152,22 @@
     font-size: 0.9rem;
     color: var(--muted);
   }
+
+  .book-search {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin: 8px 0 0;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 16px;
+  }
+
+  .book-search:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
 
   h2 {
     font-size: 0.8rem;

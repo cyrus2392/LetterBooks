@@ -6,6 +6,16 @@
   let { book, authorSlug, editing = null, onclose } = $props();
 
   let dialog;
+  // Close and tell the page directly. Some browsers don't reliably fire the
+  // dialog's "close" event, which would leave the page thinking it's open
+  // (and unable to open it again). The events below still handle Escape.
+  let closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    dialog?.close();
+    onclose();
+  }
   let form = $state(initial());
   let error = $state('');
 
@@ -33,17 +43,17 @@
     }
     if (editing) updateRead(book.id, editing.id, form);
     else addRead(book, authorSlug, form);
-    dialog.close();
+    close();
   }
 
   function remove() {
     if (!confirm('Delete this read?')) return;
     deleteRead(book.id, editing.id);
-    dialog.close();
+    close();
   }
 </script>
 
-<dialog bind:this={dialog} onclose={onclose} aria-labelledby="log-title">
+<dialog bind:this={dialog} onclose={close} oncancel={close} aria-labelledby="log-title">
   <form onsubmit={submit}>
     <h2 id="log-title">{editing ? 'Edit read' : 'Log a read'}</h2>
     <p class="muted book">{book.title}</p>
@@ -82,7 +92,7 @@
         <button type="button" class="btn danger" onclick={remove}>Delete</button>
       {/if}
       <span class="spacer"></span>
-      <button type="button" class="btn" onclick={() => dialog.close()}>Cancel</button>
+      <button type="button" class="btn" onclick={() => close()}>Cancel</button>
       <button type="submit" class="btn primary">Save</button>
     </div>
   </form>

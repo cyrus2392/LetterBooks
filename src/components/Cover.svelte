@@ -1,6 +1,6 @@
 <script>
   import { coverUrl, ukCoverId } from '../lib/data.js';
-  import { lentTo } from '../lib/store.svelte.js';
+  import { lentTo, chosenCover } from '../lib/store.svelte.js';
 
   let { book, size = 'M' } = $props();
   let failed = $state(false);
@@ -8,33 +8,44 @@
   // Books you've lent out get a "Lent out" band and a dimmed cover, wherever they appear.
   const loan = $derived(book.id ? lentTo(book.id) : null);
 
-  // Curated books come with a UK cover already chosen (coverRegion set). Any
-  // other Open Library work looks one up when it scrolls near the viewport.
-  const needsLookup = $derived(!!book.olWorkId && !book.coverRegion);
+  // A cover you've chosen wins. Otherwise curated books come with a UK cover
+  // already picked (coverRegion set), and any other Open Library work looks
+  // one up when it scrolls near the viewport.
+  const chosen = $derived(book.id ? chosenCover(book.id) : null);
+  const needsLookup = $derived(!chosen && !!book.olWorkId && !book.coverRegion);
   let ukCover = $state(); // undefined while looking up; null when there's no UK cover
-  const coverId = $derived(needsLookup ? (ukCover === undefined ? undefined : (ukCover ?? book.coverId)) : book.coverId);
+  const coverId = $derived(
+    chosen ?? (needsLookup ? (ukCover === undefined ? undefined : (ukCover ?? book.coverId)) : book.coverId),
+  );
   const src = $derived(coverId ? coverUrl(coverId, size) : null);
 
-  function lookUpWhenVisible(node) {
-    if (!needsLookup) return;
-    const workId = book.olWorkId;
+  // Track whether the cover is near the viewport, and look up the UK cover
+  // once it is and a lookup is needed. Kept separate so a lookup can start
+  // later too, e.g. after you go back from a chosen cover to the automatic one.
+  let nearView = $state(false);
+  function watchVisibility(node) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
+        nearView = true;
         observer.disconnect();
-        ukCoverId(workId).then(
-          (id) => (ukCover = id),
-          () => (ukCover = null),
-        );
       },
       { rootMargin: '400px' },
     );
     observer.observe(node);
     return () => observer.disconnect();
   }
+
+  $effect(() => {
+    if (!nearView || !needsLookup || ukCover !== undefined) return;
+    ukCoverId(book.olWorkId).then(
+      (id) => (ukCover = id),
+      () => (ukCover = null),
+    );
+  });
 </script>
 
-<div class="frame" class:lent={loan} {@attach lookUpWhenVisible}>
+<div class="frame" class:lent={loan} {@attach watchVisibility}>
   {#if coverId === undefined}
     <div class="placeholder" aria-label="Loading cover for {book.title}"></div>
   {:else if src && !failed}

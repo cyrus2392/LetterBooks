@@ -6,6 +6,16 @@
   let { book, onclose } = $props();
 
   let dialog;
+  // Close and tell the page directly. Some browsers don't reliably fire the
+  // dialog's "close" event, which would leave the page thinking it's open
+  // (and unable to open it again). The events below still handle Escape.
+  let closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    dialog?.close();
+    onclose();
+  }
   // The form starts from the loan as it was when the dialog opened.
   const current = untrack(() => lentTo(book.id));
   let to = $state(current?.to ?? '');
@@ -20,11 +30,11 @@
     event.preventDefault();
     if (!to.trim()) return;
     lend(book.id, to, on || today());
-    dialog.close();
+    close();
   }
 </script>
 
-<dialog bind:this={dialog} onclose={onclose} aria-labelledby="lend-title">
+<dialog bind:this={dialog} onclose={close} oncancel={close} aria-labelledby="lend-title">
   <form onsubmit={submit}>
     <h2 id="lend-title">{current ? 'Edit loan' : 'Lend this book'}</h2>
     <p class="muted book">{book.title}</p>
@@ -44,7 +54,7 @@
     </label>
 
     <div class="actions">
-      <button type="button" class="btn" onclick={() => dialog.close()}>Cancel</button>
+      <button type="button" class="btn" onclick={() => close()}>Cancel</button>
       <button type="submit" class="btn primary">{current ? 'Save' : 'Lend'}</button>
     </div>
   </form>

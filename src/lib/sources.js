@@ -376,6 +376,31 @@ export async function fetchUkCover(workId) {
   return uk[0]?.covers.find((c) => c > 0) ?? null;
 }
 
+// Every cover among a work's English-language editions, for choosing one by
+// hand: one entry per cover, standard UK editions first, then other UK, then
+// the rest, newest first within each.
+export async function fetchEditionCovers(workId) {
+  const { entries } = await getJson(`${OL}/works/${workId}/editions.json?limit=300`);
+  const seen = new Set();
+  const covers = [];
+  for (const e of entries.filter(isEnglish)) {
+    const coverId = e.covers?.find((c) => c > 0);
+    if (!coverId || seen.has(coverId)) continue;
+    seen.add(coverId);
+    covers.push({
+      coverId,
+      publisher: e.publishers?.[0] ?? null,
+      year: editionYear(e) || null,
+      format: e.physical_format ?? null,
+      edition: e.edition_name ?? null,
+      uk: isUkEdition(e),
+      standard: isStandard(e),
+    });
+  }
+  const rank = (c) => (c.uk ? (c.standard ? 0 : 1) : 2);
+  return covers.sort((a, b) => rank(a) - rank(b) || (b.year ?? 0) - (a.year ?? 0));
+}
+
 // Genres, for suggestions
 
 // Open Library subjects are free-form ("horror tales", "Fiction, fantasy,

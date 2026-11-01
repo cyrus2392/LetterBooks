@@ -3,10 +3,11 @@
   import Stars from '../components/Stars.svelte';
   import LogReadDialog from '../components/LogReadDialog.svelte';
   import LendDialog from '../components/LendDialog.svelte';
+  import CoverPicker from '../components/CoverPicker.svelte';
   import Icon from '../components/Icon.svelte';
-  import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
+  import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faRotateLeft, faImage } from '@fortawesome/free-solid-svg-icons';
   import { getBook, getBookDetails, TYPE_LABELS } from '../lib/data.js';
-  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned } from '../lib/store.svelte.js';
+  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, chosenCover } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
   import { formatDate, formatRelease } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
@@ -21,6 +22,7 @@
   // null when closed; { editing: read | null } when the log dialog is open.
   let logging = $state(null);
   let lending = $state(false);
+  let pickingCover = $state(false);
 </script>
 
 {#await loaded}
@@ -32,7 +34,15 @@
   {@const reads = readsOf(book.id)}
   {@const rating = latestRating(book.id)}
   <article class="book">
-    <div class="cover"><Cover {book} size="L" /></div>
+    <div class="cover-col">
+      <div class="cover"><Cover {book} size="L" /></div>
+      {#if book.olWorkId}
+        <p class="cover-actions">
+          <button class="link" onclick={() => (pickingCover = true)}><Icon icon={faImage} /> Change cover</button>
+          {#if chosenCover(book.id)}<span class="muted">· chosen by you</span>{/if}
+        </p>
+      {/if}
+    </div>
     <div class="details">
       <h1>{book.title}</h1>
       <p class="byline">
@@ -186,6 +196,10 @@
     </div>
   </article>
 
+  {#if pickingCover}
+    <CoverPicker {book} onclose={() => (pickingCover = false)} />
+  {/if}
+
   {#if lending}
     <LendDialog {book} onclose={() => (lending = false)} />
   {/if}
@@ -207,10 +221,21 @@
 
   @media (max-width: 600px) {
     .book { grid-template-columns: 1fr; }
-    .cover { max-width: 220px; }
+    .cover-col { max-width: 220px; }
   }
 
   .cover { box-shadow: 0 4px 20px rgb(0 0 0 / 0.3); border-radius: 4px; }
+
+  .cover-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 0 0;
+    font-size: 0.85rem;
+  }
+
+  .cover-actions .link { margin-left: 0; display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
 
   h1 { font-size: 2.25rem; }
 

@@ -63,7 +63,7 @@
   </div>
   {#if label}<div class="label">{label}</div>{/if}
   <a class="title" href={href('book', authorSlug, book.id)}>{book.title}</a>
-  <div class="year muted">{#if authorName}<span class="author">{authorName}</span>{#if book.year} · {/if}{/if}{book.year ?? ''}</div>
+  <div class="year muted">{#if authorName}<span class="author">{authorName}</span>{#if book.year}{' · '}{/if}{/if}{book.year ?? ''}</div>
 </article>
 
 <style>

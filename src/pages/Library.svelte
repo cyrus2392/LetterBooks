@@ -4,6 +4,7 @@
   import BookCard from '../components/BookCard.svelte';
   import { library } from '../lib/store.svelte.js';
   import { getAuthorNames, surnameKey } from '../lib/data.js';
+  import { normalizeTitle } from '../lib/sources.js';
   import { href } from '../lib/router.svelte.js';
 
   let { tab = 'owned' } = $props();
@@ -41,6 +42,14 @@
   });
   const authorOf = (b) => names.get(b.authorSlug) ?? '';
 
+  // Filter by author name (ignoring case and punctuation), with the authors
+  // in the current tab suggested as you type.
+  let authorQuery = $state('');
+  const authorNeedle = $derived(normalizeTitle(authorQuery.trim()));
+  const tabAuthors = $derived(
+    [...new Set((tab === 'read' ? read : owned).map(authorOf).filter(Boolean))].sort((a, b) => surnameKey(a).localeCompare(surnameKey(b))),
+  );
+
   const FILTERS = {
     owned: [
       ['all', 'All'],
@@ -64,7 +73,9 @@
   };
 
   const shown = $derived.by(() => {
-    const list = (tab === 'read' ? read : owned).filter(TESTS[filter] ?? TESTS.all);
+    const list = (tab === 'read' ? read : owned)
+      .filter(TESTS[filter] ?? TESTS.all)
+      .filter((b) => !authorNeedle || normalizeTitle(authorOf(b)).includes(authorNeedle));
     if (sort === 'title') return [...list].sort((a, b) => a.title.localeCompare(b.title));
     if (sort === 'author') {
       // Surname A–Z, then each author's books in publication order.
@@ -79,16 +90,6 @@
     return [...list].sort((a, b) => date(b).localeCompare(date(a)));
   });
 
-  // For the author sort: consecutive runs of the same author, shown under a heading.
-  const groups = $derived.by(() => {
-    const out = [];
-    for (const book of shown) {
-      const last = out.at(-1);
-      if (last?.ref === book.authorSlug) last.books.push(book);
-      else out.push({ ref: book.authorSlug, books: [book] });
-    }
-    return out;
-  });
 </script>
 
 <h1>Library</h1>
@@ -114,6 +115,18 @@
       <button class="chip" aria-pressed={filter === value} onclick={() => (filter = value)}>{label}</button>
     {/each}
   </div>
+  <input
+    type="search"
+    class="author-filter"
+    bind:value={authorQuery}
+    list="library-authors"
+    placeholder="Filter by author"
+    aria-label="Filter by author"
+    onkeydown={(e) => e.key === 'Escape' && (authorQuery = '')}
+  />
+  <datalist id="library-authors">
+    {#each tabAuthors as name}<option value={name}></option>{/each}
+  </datalist>
   <label class="sort">
     Sort
     <select bind:value={sort}>
@@ -124,26 +137,17 @@
   </label>
 </div>
 
-{#if shown.length && sort === 'author'}
-  {#each groups as group (group.ref)}
-    <section class="group">
-      <h2>
-        <a href={href('author', group.ref)}>{names.get(group.ref) ?? 'Loading…'}</a>
-        <span class="count">{group.books.length}</span>
-      </h2>
-      <div class="grid">
-        {#each group.books as book (book.id)}
-          <BookCard {book} authorSlug={book.authorSlug} />
-        {/each}
-      </div>
-    </section>
-  {/each}
-{:else if shown.length}
+{#if shown.length}
   <div class="grid">
     {#each shown as book (book.id)}
       <BookCard {book} authorSlug={book.authorSlug} authorName={authorOf(book)} />
     {/each}
   </div>
+{:else if authorNeedle}
+  <p class="muted empty">
+    No books by an author matching “{authorQuery.trim()}”.
+    <button class="link" onclick={() => (authorQuery = '')}>Clear filter</button>
+  </p>
 {:else if tab === 'read'}
   <p class="muted empty">{read.length ? 'Nothing matches that filter.' : 'Books you mark as read will appear here.'}</p>
 {:else}
@@ -231,19 +235,25 @@
 
   .empty { max-width: 520px; }
 
-  .group + .group { margin-top: 36px; }
-
-  .group h2 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 14px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-    font-size: 1.1rem;
+  .author-filter {
+    flex: 1 1 200px;
+    max-width: 280px;
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 14px;
   }
 
-  .group h2 a { text-decoration: none; }
+  .author-filter:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
 
-  .group h2 a:hover { text-decoration: underline; }
+  .link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text);
+    text-decoration: underline;
+  }
 </style>

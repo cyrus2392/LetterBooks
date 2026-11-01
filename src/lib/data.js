@@ -78,6 +78,50 @@ export async function getYourAuthors(refs) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// Display names for author refs (curated slug or Open Library key), for lists
+// that only store the ref. Curated names come from the index; live authors
+// from their cached bibliography, or Open Library, remembered for good.
+const NAMES_KEY = 'letterbooks:cache:author-names';
+export async function getAuthorNames(refs) {
+  const curated = await getAuthors();
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(NAMES_KEY)) ?? {};
+  } catch {
+    // Start empty.
+  }
+  const names = new Map();
+  await Promise.all(
+    [...new Set(refs)].map(async (ref) => {
+      const c = curated.find((a) => a.slug === ref || a.olKey === ref);
+      if (c) return names.set(ref, c.name);
+      if (saved[ref]) return names.set(ref, saved[ref]);
+      try {
+        const name = (await getAuthor(ref)).name;
+        saved[ref] = name;
+        names.set(ref, name);
+      } catch {
+        names.set(ref, 'Unknown author');
+      }
+    }),
+  );
+  try {
+    localStorage.setItem(NAMES_KEY, JSON.stringify(saved));
+  } catch {
+    // Not cached.
+  }
+  return names;
+}
+
+// "Stephen King" -> "king stephen", so authors sort by surname. Suffixes such
+// as "Jr." are skipped when finding the surname.
+export function surnameKey(name) {
+  const parts = name.trim().split(/\s+/);
+  let i = parts.length - 1;
+  while (i > 0 && /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(parts[i])) i--;
+  return [parts[i], ...parts.slice(0, i), ...parts.slice(i + 1)].join(' ').toLowerCase();
+}
+
 // A book by its author ref and work id. Falls back to Open Library for works
 // that aren't in the author's list (e.g. filtered out, or found by search).
 export async function getBook(authorRef, bookId) {

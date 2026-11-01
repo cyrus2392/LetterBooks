@@ -3,17 +3,43 @@
   // Owning and reading are independent, so each tab can be narrowed by the other.
   import BookCard from '../components/BookCard.svelte';
   import { library } from '../lib/store.svelte.js';
+  import { getAuthorNames, surnameKey } from '../lib/data.js';
   import { href } from '../lib/router.svelte.js';
 
   let { tab = 'owned' } = $props();
 
   // Filter within a tab: on the bookshelf, read or unread; in read books, owned or not.
   let filter = $state('all');
-  let sort = $state('recent');
+  // The sort choice sticks across tabs and visits.
+  const SORT_KEY = 'letterbooks:library-sort';
+  let sort = $state(savedSort());
+  function savedSort() {
+    try {
+      const s = localStorage.getItem(SORT_KEY);
+      return ['recent', 'title', 'author'].includes(s) ? s : 'recent';
+    } catch {
+      return 'recent';
+    }
+  }
+  $effect(() => {
+    try {
+      localStorage.setItem(SORT_KEY, sort);
+    } catch {
+      // Not remembered; the default applies next time.
+    }
+  });
 
   const all = $derived(library());
   const owned = $derived(all.filter((b) => b.owned));
   const read = $derived(all.filter((b) => b.read));
+
+  // Author names, looked up from the refs the library stores. Kept in state
+  // (not awaited in the template) so toggling a book doesn't flash "loading".
+  let names = $state(new Map());
+  $effect(() => {
+    getAuthorNames(all.map((b) => b.authorSlug)).then((m) => (names = m));
+  });
+  const authorOf = (b) => names.get(b.authorSlug) ?? '';
 
   const FILTERS = {
     owned: [
@@ -40,8 +66,28 @@
   const shown = $derived.by(() => {
     const list = (tab === 'read' ? read : owned).filter(TESTS[filter] ?? TESTS.all);
     if (sort === 'title') return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    const date = (b) => (tab === 'read' ? b.readOn : b.ownedAt);
+    if (sort === 'author') {
+      // Surname A–Z, then each author's books in publication order.
+      return [...list].sort(
+        (a, b) =>
+          surnameKey(authorOf(a) || a.authorSlug).localeCompare(surnameKey(authorOf(b) || b.authorSlug)) ||
+          (a.year ?? 9999) - (b.year ?? 9999) ||
+          a.title.localeCompare(b.title),
+      );
+    }
+    const date = (b) => (tab === 'read' ? b.readAt : b.ownedAt);
     return [...list].sort((a, b) => date(b).localeCompare(date(a)));
+  });
+
+  // For the author sort: consecutive runs of the same author, shown under a heading.
+  const groups = $derived.by(() => {
+    const out = [];
+    for (const book of shown) {
+      const last = out.at(-1);
+      if (last?.ref === book.authorSlug) last.books.push(book);
+      else out.push({ ref: book.authorSlug, books: [book] });
+    }
+    return out;
   });
 </script>
 
@@ -73,14 +119,29 @@
     <select bind:value={sort}>
       <option value="recent">{tab === 'read' ? 'Recently read' : 'Recently added'}</option>
       <option value="title">Title</option>
+      <option value="author">Author</option>
     </select>
   </label>
 </div>
 
-{#if shown.length}
+{#if shown.length && sort === 'author'}
+  {#each groups as group (group.ref)}
+    <section class="group">
+      <h2>
+        <a href={href('author', group.ref)}>{names.get(group.ref) ?? 'Loading…'}</a>
+        <span class="count">{group.books.length}</span>
+      </h2>
+      <div class="grid">
+        {#each group.books as book (book.id)}
+          <BookCard {book} authorSlug={book.authorSlug} />
+        {/each}
+      </div>
+    </section>
+  {/each}
+{:else if shown.length}
   <div class="grid">
     {#each shown as book (book.id)}
-      <BookCard {book} authorSlug={book.authorSlug} />
+      <BookCard {book} authorSlug={book.authorSlug} authorName={authorOf(book)} />
     {/each}
   </div>
 {:else if tab === 'read'}
@@ -89,7 +150,7 @@
   <p class="muted empty">
     {owned.length
       ? 'Nothing matches that filter.'
-      : 'Your bookshelf is empty. Use the shelf button on the top left of any cover, or "I own this" on a book page, to add books you own.'}
+      : 'Your bookshelf is empty. Use the book button on the top left of any cover, or "I own this" on a book page, to add books you own.'}
   </p>
 {/if}
 
@@ -169,4 +230,20 @@
   }
 
   .empty { max-width: 520px; }
+
+  .group + .group { margin-top: 36px; }
+
+  .group h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 1.1rem;
+  }
+
+  .group h2 a { text-decoration: none; }
+
+  .group h2 a:hover { text-decoration: underline; }
 </style>

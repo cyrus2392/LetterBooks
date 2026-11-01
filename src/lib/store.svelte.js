@@ -111,7 +111,9 @@ export function library() {
         read: hasRead(e),
         owned: !!e.owned,
         lent: e.lent ?? null,
-        readOn: reads[0]?.finishedOn ?? e.quickReadAt?.slice(0, 10) ?? '',
+        // Finish date of the latest logged read, else when it was ticked (full
+        // timestamp, so books ticked the same day still sort).
+        readAt: reads[0]?.finishedOn ?? e.quickReadAt ?? '',
         ownedAt: e.ownedAt ?? '', // full timestamp, so books added the same day still sort
       };
     });

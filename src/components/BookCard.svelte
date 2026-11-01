@@ -8,8 +8,9 @@
 
   // Two toggles on the cover: owned (top left) and read (top right).
   // `editing` swaps them for a hide/restore button; `label` is shown above
-  // the title (e.g. a series position).
-  let { book, authorSlug, editing = false, label = null } = $props();
+  // the title (e.g. a series position); `authorName` is shown before the year,
+  // for lists that mix authors.
+  let { book, authorSlug, editing = false, label = null, authorName = null } = $props();
   const read = $derived(isRead(book.id));
   const owned = $derived(isOwned(book.id));
   const current = $derived(shelfOf(book.id));
@@ -62,7 +63,7 @@
   </div>
   {#if label}<div class="label">{label}</div>{/if}
   <a class="title" href={href('book', authorSlug, book.id)}>{book.title}</a>
-  <div class="year muted">{book.year}</div>
+  <div class="year muted">{#if authorName}<span class="author">{authorName}</span>{#if book.year} · {/if}{/if}{book.year ?? ''}</div>
 </article>
 
 <style>
@@ -153,7 +154,12 @@
 
   .title:hover { text-decoration: underline; }
 
-  .year { font-size: 0.8rem; }
+  .year {
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   /* Edit mode: the hide/restore button is always visible. */
   .tick.hide, .read .tick.hide {

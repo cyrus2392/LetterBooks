@@ -333,14 +333,36 @@ const isUkEdition = (e) =>
 
 const editionYear = (e) => Number(e.publish_date?.match(/\b(1[89]\d\d|20\d\d)\b/)?.[1] ?? 0);
 
-// Cover from the newest UK edition of a work that has one, or null if no UK
-// edition has a cover (callers then use the work's default cover).
+// Editions that aren't the standard book: special and anniversary editions,
+// film tie-ins, seasonal covers, expanded texts, large print, audio and
+// e-books. Checked against title, subtitle, edition name, format and publisher.
+const NOT_STANDARD = new RegExp(
+  [
+    'anniversary', 'special', 'collector', 'collectible', 'deluxe', 'illustrated', 'limited', 'signed', 'exclusive',
+    'tie-?in', 'movie', '\\bfilm\\b', 'now a (major|netflix|hbo)', 'halloween', 'christmas', 'commemorative', 'keepsake',
+    'gift', 'leather', 'slipcase', 'complete (and|&) uncut', 'uncut', 'edition with', 'large (print|type)', 'audio',
+    'cassette', '\\bcd\\b', 'mp3', 'e-?book', 'electronic', 'kindle', 'box(ed)? set', 'omnibus', 'graphic', 'book club',
+    'braille', 'abridged', 'annotated', 'study guide',
+  ].join('|'),
+  'i',
+);
+
+const isStandard = (e) =>
+  !NOT_STANDARD.test([e.title, e.subtitle, e.edition_name, e.physical_format, ...(e.publishers ?? []), ...(e.series ?? [])].filter(Boolean).join(' | '));
+
+// English, or no language recorded (common for UK editions); never another language.
+const isEnglish = (e) => !e.languages?.length || e.languages.some((l) => l.key === '/languages/eng');
+
+const isPaperback = (e) => /paperback|mass market/i.test(e.physical_format ?? '');
+
+// Cover from the newest standard, English-language UK edition of a work,
+// preferring paperbacks; null if there's none with a cover (callers then use
+// the work's default cover).
 export async function fetchUkCover(workId) {
   const { entries } = await getJson(`${OL}/works/${workId}/editions.json?limit=300`);
   const uk = entries
-    .filter((e) => e.covers?.some((c) => c > 0) && isUkEdition(e))
-    .filter((e) => !e.languages || e.languages.some((l) => l.key === '/languages/eng'))
-    .sort((a, b) => editionYear(b) - editionYear(a));
+    .filter((e) => e.covers?.some((c) => c > 0) && isUkEdition(e) && isEnglish(e) && isStandard(e))
+    .sort((a, b) => isPaperback(b) - isPaperback(a) || editionYear(b) - editionYear(a));
   return uk[0]?.covers.find((c) => c > 0) ?? null;
 }
 

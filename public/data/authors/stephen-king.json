@@ -2,7 +2,7 @@
   "slug": "stephen-king",
   "name": "Stephen King",
   "olKey": "OL19981A",
-  "updatedAt": "2026-10-29",
+  "updatedAt": "2026-11-01",
   "books": [
     {
       "id": "OL81626W",
@@ -10,8 +10,8 @@
       "title": "Carrie",
       "year": 1974,
       "type": "novel",
-      "coverId": 15255731,
-      "readers": 377,
+      "coverId": 12108271,
+      "readers": 380,
       "coverRegion": "uk"
     },
     {
@@ -20,7 +20,7 @@
       "title": "'Salem's Lot",
       "year": 1975,
       "type": "novel",
-      "coverId": 15255779,
+      "coverId": 14654614,
       "readers": 232,
       "coverRegion": "uk"
     },
@@ -68,7 +68,7 @@
       "year": 1978,
       "type": "novel",
       "coverId": 15253669,
-      "readers": 193,
+      "readers": 198,
       "coverRegion": "uk"
     },
     {
@@ -78,9 +78,9 @@
       "year": 1979,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 15123505,
+      "coverId": 14653609,
       "readers": 98,
-      "coverRegion": "uk"
+      "coverRegion": "default"
     },
     {
       "id": "OL81630W",
@@ -88,7 +88,7 @@
       "title": "The Dead Zone",
       "year": 1979,
       "type": "novel",
-      "coverId": 8668255,
+      "coverId": 2403718,
       "readers": 125,
       "coverRegion": "uk"
     },
@@ -98,7 +98,7 @@
       "title": "Firestarter",
       "year": 1980,
       "type": "novel",
-      "coverId": 14654014,
+      "coverId": 8762601,
       "readers": 87,
       "coverRegion": "uk"
     },
@@ -129,7 +129,7 @@
       "title": "Cujo",
       "year": 1981,
       "type": "novel",
-      "coverId": 12108424,
+      "coverId": 14652519,
       "readers": 133,
       "coverRegion": "uk"
     },
@@ -156,7 +156,7 @@
           "position": 1
         }
       ],
-      "coverId": 14546623,
+      "coverId": 8761178,
       "readers": 172,
       "coverRegion": "uk"
     },
@@ -166,7 +166,7 @@
       "title": "Different Seasons",
       "year": 1982,
       "type": "collection",
-      "coverId": 8665145,
+      "coverId": 10509865,
       "readers": 57,
       "coverRegion": "uk"
     },
@@ -176,7 +176,7 @@
       "title": "Christine",
       "year": 1983,
       "type": "novel",
-      "coverId": 8309510,
+      "coverId": 10357658,
       "readers": 126,
       "coverRegion": "uk"
     },
@@ -186,7 +186,7 @@
       "title": "Pet Sematary",
       "year": 1983,
       "type": "novel",
-      "coverId": 12347428,
+      "coverId": 12625028,
       "readers": 304,
       "coverRegion": "uk"
     },
@@ -215,7 +215,7 @@
       "coAuthors": [
         "Peter Straub"
       ],
-      "coverId": 15253694,
+      "coverId": 2396591,
       "readers": 30,
       "coverRegion": "uk"
     },
@@ -226,7 +226,7 @@
       "year": 1984,
       "type": "novel",
       "pseudonym": "Richard Bachman",
-      "coverId": 14654165,
+      "coverId": 15214140,
       "readers": 116,
       "coverRegion": "uk"
     },
@@ -236,7 +236,7 @@
       "title": "Skeleton Crew",
       "year": 1985,
       "type": "collection",
-      "coverId": 15214558,
+      "coverId": 10299398,
       "readers": 98,
       "coverRegion": "uk"
     },
@@ -272,7 +272,7 @@
           "position": 2
         }
       ],
-      "coverId": 14546626,
+      "coverId": 15254410,
       "readers": 184,
       "coverRegion": "uk"
     },
@@ -322,7 +322,7 @@
       "title": "Four Past Midnight",
       "year": 1990,
       "type": "collection",
-      "coverId": 14721378,
+      "coverId": 14652837,
       "readers": 70,
       "coverRegion": "uk"
     },
@@ -348,7 +348,7 @@
           "position": 3
         }
       ],
-      "coverId": 14546628,
+      "coverId": 15254412,
       "readers": 156,
       "coverRegion": "uk"
     },
@@ -408,8 +408,8 @@
       "title": "The Green Mile",
       "year": 1996,
       "type": "novel",
-      "coverId": 15259261,
-      "readers": 239,
+      "coverId": 15270082,
+      "readers": 241,
       "coverRegion": "uk"
     },
     {
@@ -445,7 +445,7 @@
           "position": 4
         }
       ],
-      "coverId": 14546631,
+      "coverId": 15254467,
       "readers": 140,
       "coverRegion": "uk"
     },
@@ -455,7 +455,7 @@
       "title": "Bag of Bones",
       "year": 1998,
       "type": "novel",
-      "coverId": 14654047,
+      "coverId": 14652838,
       "readers": 97,
       "coverRegion": "uk"
     },
@@ -475,7 +475,7 @@
       "title": "Hearts in Atlantis",
       "year": 1999,
       "type": "collection",
-      "coverId": 8668725,
+      "coverId": 205321,
       "readers": 92,
       "coverRegion": "uk"
     },
@@ -485,7 +485,7 @@
       "title": "On Writing",
       "year": 2000,
       "type": "nonfiction",
-      "coverId": 15258947,
+      "coverId": 8784453,
       "readers": 144,
       "coverRegion": "uk"
     },
@@ -524,7 +524,7 @@
       "coAuthors": [
         "Peter Straub"
       ],
-      "coverId": 15253696,
+      "coverId": 14653089,
       "readers": 14,
       "coverRegion": "uk"
     },
@@ -534,7 +534,7 @@
       "title": "From a Buick 8",
       "year": 2002,
       "type": "novel",
-      "coverId": 14797255,
+      "coverId": 14652495,
       "readers": 74,
       "coverRegion": "uk"
     },
@@ -544,7 +544,7 @@
       "title": "Everything's Eventual",
       "year": 2002,
       "type": "collection",
-      "coverId": 15254985,
+      "coverId": 10306601,
       "readers": 71,
       "coverRegion": "uk"
     },
@@ -560,7 +560,7 @@
           "position": 5
         }
       ],
-      "coverId": 15249904,
+      "coverId": 14652409,
       "readers": 214,
       "coverRegion": "uk"
     },
@@ -605,7 +605,7 @@
       "coAuthors": [
         "Stewart O'Nan"
       ],
-      "coverId": 2353363,
+      "coverId": 12621050,
       "readers": 0,
       "coverRegion": "uk"
     },
@@ -635,8 +635,8 @@
       "title": "Lisey's Story",
       "year": 2006,
       "type": "novel",
-      "coverId": 14654027,
-      "readers": 49,
+      "coverId": 14652544,
+      "readers": 51,
       "coverRegion": "uk"
     },
     {
@@ -656,7 +656,7 @@
       "title": "Duma Key",
       "year": 2008,
       "type": "novel",
-      "coverId": 14740869,
+      "coverId": 12071686,
       "readers": 89,
       "coverRegion": "uk"
     },
@@ -697,7 +697,7 @@
       "year": 2011,
       "type": "novel",
       "coverId": 15254483,
-      "readers": 159,
+      "readers": 161,
       "coverRegion": "uk"
     },
     {
@@ -712,7 +712,7 @@
           "position": 4.5
         }
       ],
-      "coverId": 15254956,
+      "coverId": 13869792,
       "readers": 32,
       "coverRegion": "uk"
     },
@@ -722,7 +722,7 @@
       "title": "Joyland",
       "year": 2013,
       "type": "novel",
-      "coverId": 11497063,
+      "coverId": 9154939,
       "readers": 42,
       "coverRegion": "uk"
     },
@@ -754,7 +754,7 @@
           "position": 1
         }
       ],
-      "coverId": 13179404,
+      "coverId": 10708772,
       "readers": 116,
       "coverRegion": "uk"
     },
@@ -905,7 +905,7 @@
       "title": "Later",
       "year": 2021,
       "type": "novel",
-      "coverId": 14679320,
+      "coverId": 14654000,
       "readers": 11,
       "coverRegion": "uk"
     },
@@ -970,7 +970,7 @@
       "title": "You Like It Darker",
       "year": 2024,
       "type": "collection",
-      "coverId": 15135678,
+      "coverId": 14852513,
       "readers": 7,
       "coverRegion": "uk"
     },

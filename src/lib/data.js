@@ -161,7 +161,8 @@ export const TYPE_LABELS = { novel: 'Novel', collection: 'Collection', nonfictio
 // a time, and remembered for a month. Resolves to a cover id, or null to use
 // the book's default cover.
 
-const COVERS_KEY = 'letterbooks:cache:uk-covers';
+// v2: standard editions only (no anniversary, tie-in or audio covers).
+const COVERS_KEY = 'letterbooks:cache:uk-covers-v2';
 let ukCovers;
 function savedUkCovers() {
   if (!ukCovers) {

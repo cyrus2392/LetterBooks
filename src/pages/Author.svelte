@@ -59,7 +59,12 @@
 
   {#if author.live && author.source?.name === 'Wikipedia'}
     <p class="notice">
-      This list comes from Wikipedia's <a href={author.source.url} target="_blank" rel="noopener">{author.source.title}</a>.
+      {#if author.source.mainArticle}
+        This list comes from the works section of {author.name}'s
+        <a href={author.source.url} target="_blank" rel="noopener">Wikipedia article</a>.
+      {:else}
+        This list comes from Wikipedia's <a href={author.source.url} target="_blank" rel="noopener">{author.source.title}</a>.
+      {/if}
       Use <strong>Edit list</strong> to hide anything that shouldn't count.
     </p>
   {:else if author.live}

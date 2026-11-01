@@ -475,7 +475,7 @@
       "title": "Hearts in Atlantis",
       "year": 1999,
       "type": "collection",
-      "coverId": 205321,
+      "coverId": 14652528,
       "readers": 92,
       "coverRegion": "uk"
     },
@@ -615,9 +615,9 @@
       "title": "The Colorado Kid",
       "year": 2005,
       "type": "novel",
-      "coverId": 14653573,
+      "coverId": 8380883,
       "readers": 40,
-      "coverRegion": "uk"
+      "coverRegion": "default"
     },
     {
       "id": "OL81597W",
@@ -907,7 +907,7 @@
       "type": "novel",
       "coverId": 14654000,
       "readers": 11,
-      "coverRegion": "uk"
+      "coverRegion": "default"
     },
     {
       "id": "OL24229351W",

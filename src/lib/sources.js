@@ -148,7 +148,7 @@ export async function fetchWikidataWorks(olKey) {
       OPTIONAL { ?work p:P179 ?st . ?st ps:P179 ?series . OPTIONAL { ?st pq:P1545 ?ord } }
       OPTIONAL { ?work wdt:P577 ?pub }
       OPTIONAL { ?work wdt:P31 ?type }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
     }`;
   const url = `${WIKIDATA}?format=json&query=${encodeURIComponent(query)}`;
   const { results } = await getJson(url, { headers: { Accept: 'application/sparql-results+json' } });
@@ -304,7 +304,7 @@ export async function buildAuthor(olKey) {
     live: true,
     // `temporary` marks a fallback caused by Wikipedia being unreachable, which shouldn't be cached.
     source: useWikipedia
-      ? { name: 'Wikipedia', title: wiki.sourceTitle, url: wiki.sourceUrl }
+      ? { name: 'Wikipedia', title: wiki.sourceTitle, url: wiki.sourceUrl, mainArticle: wiki.mainArticle }
       : { name: 'Open Library', ...(wiki?.error && { temporary: true }) },
     updatedAt: new Date().toISOString().slice(0, 10),
     books,
@@ -347,8 +347,18 @@ const NOT_STANDARD = new RegExp(
   'i',
 );
 
-const isStandard = (e) =>
-  !NOT_STANDARD.test([e.title, e.subtitle, e.edition_name, e.physical_format, ...(e.publishers ?? []), ...(e.series ?? [])].filter(Boolean).join(' | '));
+// "<word> edition" is a special edition (Slytherin, Signature, MinaLima,
+// Ancient Greek…) unless the word is an ordinary one like these.
+const ORDINARY_EDITION = /^(first|1st|second|2nd|third|3rd|\d+(st|nd|rd|th)|new|revised|uk|british|paperback|hardback|hardcover|trade|reprint|standard|export|international|\d{4})$/i;
+const namesSpecialEdition = (text) => [...text.matchAll(/([\w'’-]+)\s+edition\b/gi)].some(([, word]) => !ORDINARY_EDITION.test(word));
+
+// Translations into other languages sometimes carry no language code.
+const OTHER_LANGUAGE = /\((irish|welsh|scots|gaelic|scottish gaelic|latin|cornish)\)|ancient greek|[\u0370-\u03ff\u0400-\u04ff]/i;
+
+const isStandard = (e) => {
+  const text = [e.title, e.subtitle, e.edition_name, e.physical_format, ...(e.publishers ?? []), ...(e.series ?? [])].filter(Boolean).join(' | ');
+  return !NOT_STANDARD.test(text) && !OTHER_LANGUAGE.test(text) && !namesSpecialEdition([e.title, e.subtitle, e.edition_name].filter(Boolean).join(' | '));
+};
 
 // English, or no language recorded (common for UK editions); never another language.
 const isEnglish = (e) => !e.languages?.length || e.languages.some((l) => l.key === '/languages/eng');
@@ -455,7 +465,7 @@ async function wikidataBook(where) {
       OPTIONAL { ?item p:P577/psv:P577 [ wikibase:timeValue ?date ; wikibase:timePrecision ?precision ] }
       OPTIONAL { ?article schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> }
       OPTIONAL { ?item wdt:P136 ?genre }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
     }`;
   const { results } = await getJson(`${WIKIDATA}?format=json&query=${encodeURIComponent(query)}`, {
     headers: { Accept: 'application/sparql-results+json' },

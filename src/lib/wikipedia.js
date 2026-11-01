@@ -37,7 +37,9 @@ async function articleFor(olKey) {
 async function parsePage(page) {
   const data = await api(WP_API, { action: 'parse', page, prop: 'text', redirects: '1' });
   if (data.error) return null;
-  return { title: data.parse.title, html: data.parse.text };
+  // "X bibliography" often redirects to a section of X's main article.
+  const fragment = data.parse.redirects?.[0]?.tofragment?.replace(/_/g, ' ') ?? null;
+  return { title: data.parse.title, html: data.parse.text, fragment };
 }
 
 // Section headings that never hold standalone books by this author.
@@ -48,6 +50,7 @@ const SKIP_SECTION = new RegExp(
     '\\bfilms?\\b', 'graphic novel', 'stage', 'broadcast', 'radio', '\\bplays\\b',
     'comic', 'poetry', 'poems', 'essays', 'articles', 'introduction', 'foreword', 'adaptation', 'audio', '\\bgames?\\b',
     'unpublished', 'unfinished', 'uncollected', 'see also', 'references', '^notes', 'external links', 'further reading',
+    'cited', 'citations', 'filmography', 'interview',
     '^sources', 'works about', 'awards', 'reception', 'as editor', 'edited', 'contribution', 'chapbook', 'limited edition',
     'omnibus', 'box(ed)? set', 'rock bottom', '^others?$', 'other media', 'music', '^plays?$', 'scripts', 'early life',
     'career', 'personal life', 'biography', 'legacy', 'death', 'influences', 'style', 'themes', 'honours', 'honors',
@@ -58,7 +61,7 @@ const SKIP_SECTION = new RegExp(
 // Headings that group books without naming a series.
 // Matched by keyword, so "Short fiction collections" or "Other novels" count;
 // "series" only on its own, since "Legion series" is a real series name.
-const GENERIC = /\b(novels?|novellas?|collections?|fiction|non-?fiction|books?|works|writings?|miscellany|standalones?|stand-alone|bibliography|children's|young adult|middle grade|era|others?)\b|^(novel )?series$/i;
+const GENERIC = /\b(novels?|novellas?|collections?|fiction|non-?fiction|books?|works|writings?|miscellany|standalones?|stand-alones?|bibliography|children's|young adult|middle grade|era|others?)\b|^(novel )?series$/i;
 
 // Only generic headings say what kind of book it is; a series called
 // "... Collection" doesn't make its books collections.
@@ -77,11 +80,25 @@ function typeFor(headings) {
 function seriesFor(headings) {
   for (let i = headings.length - 1; i >= 0; i--) {
     if (!GENERIC.test(headings[i])) {
-      return { name: headings[i].replace(/\s+series$/i, ''), ordered: i === headings.length - 1 };
+      return { name: seriesName(headings[i]), ordered: i === headings.length - 1 };
     }
   }
   return null;
 }
+
+// "His Dark Materials trilogy" and "His Dark Materials" are one series;
+// "The Pandora Sequence (also known as …)" is "The Pandora Sequence".
+const seriesName = (text) =>
+  clean(text.replace(/\(.*?\)/g, '').replace(/[:\s]+$/, '').replace(/\s+(series|trilogy|saga|novels|books)$/i, ''));
+
+// Notes beside a title that mean it isn't a book of the author's own.
+const NOT_A_BOOK_NOTE = /short story|screenplay|story concept|\bplay\b|contributor|foreword|introduction/i;
+
+// On an author's main article, only these sections list their works.
+const WORKS_HEADINGS = [
+  'written works', 'works', 'bibliography', 'selected works', 'selected bibliography', 'partial bibliography',
+  'publications', 'books', 'novels', 'writings', 'literary works', 'list of works',
+];
 
 const EDITION = /complete and uncut|uncut edition|(revised|expanded|anniversary|illustrated|special|collector's) edition/i;
 
@@ -127,7 +144,11 @@ function booksFromTable(table) {
   const col = (re) => names.findIndex((n) => re.test(n));
   const titleCol = col(/title|book|novel/);
   const yearCol = col(/year|published|date|release/);
-  const numCol = col(/^(#|no\.?|number|vol(ume)?\.?)$/);
+  const numCol = col(/^(#|no\.?|number|vol(ume)?\.?)$|order/);
+  // Some tables give series and kind of work as columns instead of headings,
+  // e.g. "Harry Potter series" / "Young adult fiction".
+  const seriesCol = col(/series/);
+  const typeCol = col(/type|target|category|genre|format/);
 
   const books = [];
   for (const { row, cells } of rows) {
@@ -141,9 +162,25 @@ function booksFromTable(table) {
     // unless it sits in a dedicated title column.
     const title = clean((italic ?? (titleCol >= 0 ? titleCell : null))?.textContent ?? '');
     if (!title) continue;
+    const cellText = titleCell.textContent.trim();
+    // "(short story published in …)", "(contributor)" and the like.
+    if (NOT_A_BOOK_NOTE.test(cellText.replace(italic?.textContent ?? '', ''))) continue;
+    const typeText = typeCol >= 0 && row[typeCol] !== titleCell ? row[typeCol].textContent.trim() : '';
+    const seriesText = seriesCol >= 0 && row[seriesCol] !== titleCell ? row[seriesCol].textContent.trim() : '';
+    // Rows grouped as "Articles" or "original screenplays".
+    if (SKIP_SECTION.test(typeText) || SKIP_SECTION.test(seriesText)) continue;
+    const series = /\bseries\b/i.test(seriesText) ? seriesName(seriesText.replace(/\bseries\b.*$/i, '')) : null;
     const yearText = (yearCol >= 0 ? row[yearCol]?.textContent : null) ?? row.map((c) => c?.textContent ?? '').join(' ');
-    const position = numCol >= 0 ? parseFloat(row[numCol]?.textContent) : NaN;
-    books.push({ title, year: Number(yearIn(yearText ?? '')) || null, position: Number.isFinite(position) ? position : null });
+    // A position column, or a numbered title ("1. Harry Potter and…").
+    const numbered = cellText.match(/^(\d+(?:\.\d+)?)[.)]\s/);
+    const position = numCol >= 0 ? parseFloat(row[numCol]?.textContent) : numbered ? parseFloat(numbered[1]) : NaN;
+    books.push({
+      title,
+      year: Number(yearIn(yearText ?? '')) || null,
+      position: Number.isFinite(position) ? position : null,
+      ...(series && { series }),
+      ...(typeText && { typeText }),
+    });
   }
   return books;
 }
@@ -163,7 +200,9 @@ function booksFromList(list) {
   return books;
 }
 
-export function parseBibliography(html) {
+// `scope`, if given, limits parsing to sections whose heading matches it (and
+// their subsections), for bibliographies that are part of a main article.
+export function parseBibliography(html, scope = null) {
   const doc = new DOMParser().parseFromString(`<div id="root">${html}</div>`, 'text/html');
   const root = doc.querySelector('.mw-parser-output') ?? doc.querySelector('#root');
   for (const el of root.querySelectorAll('sup, style, .mw-editsection, .navbox, .reflist, .infobox')) el.remove();
@@ -172,10 +211,14 @@ export function parseBibliography(html) {
   const books = [];
   const seen = new Set();
 
+  // A short line such as "Jack Reacher series:" just before a table or list
+  // names the series for it, like a heading would.
+  let caption = null;
   const add = (found) => {
-    const texts = headings.map((h) => h.text);
+    const texts = [...headings.map((h) => h.text), ...(caption ? [caption] : [])];
+    if (scope && !headings.some((h) => scope.test(h.text))) return;
     if (texts.some((t) => SKIP_SECTION.test(t))) return;
-    const series = seriesFor(texts);
+    const headingSeries = seriesFor(texts.filter((t) => !scope?.test(t)));
     found.forEach((b, i) => {
       // Quoted titles are short stories and novelettes, not books; special
       // editions are versions of a book that's already listed.
@@ -183,11 +226,13 @@ export function parseBibliography(html) {
       const key = b.title.toLowerCase();
       if (seen.has(key)) return;
       seen.add(key);
-      const position = series?.ordered ? (b.position ?? i + 1) : null;
+      // A series column beats the headings; a type column adds to them.
+      const series = b.series ? { name: b.series, ordered: true } : headingSeries;
+      const position = series?.ordered ? (b.position ?? (b.series ? null : i + 1)) : null;
       books.push({
         title: b.title,
         year: b.year,
-        type: typeFor(texts),
+        type: typeFor(b.typeText ? [...texts, b.typeText] : texts),
         ...(series && { series: [{ name: series.name, position }] }),
       });
     });
@@ -199,13 +244,20 @@ export function parseBibliography(html) {
       const level = Number(h.tagName[1]);
       while (headings.length && headings.at(-1).level >= level) headings.pop();
       headings.push({ level, text: h.textContent.trim() });
+      caption = null;
       continue;
     }
     if (!headings.length) continue; // lead section
+    if (el.matches('p')) {
+      const text = el.textContent.trim();
+      caption = text.length < 80 && /(series|trilogy|saga|sequence|cycle)\s*:?$/i.test(text) ? text : null;
+      continue;
+    }
     const tables = el.matches('table.wikitable') ? [el] : [...el.querySelectorAll('table.wikitable')];
     for (const t of tables) add(booksFromTable(t));
     const lists = el.matches('ul, ol') ? [el] : el.matches('div.div-col, div.columns') ? [...el.querySelectorAll('ul, ol')] : [];
     for (const l of lists) add(booksFromList(l));
+    if (tables.length || lists.length) caption = null;
   }
   return books;
 }
@@ -214,8 +266,20 @@ export function parseBibliography(html) {
 export async function wikipediaBibliography(olKey) {
   const article = await articleFor(olKey);
   if (!article) return null;
-  const page = (await parsePage(`${article} bibliography`)) ?? (await parsePage(article));
+  const bibliography = await parsePage(`${article} bibliography`);
+  // A dedicated "X bibliography" article is read whole; otherwise (no such
+  // article, or it redirects into the main one) only the main article's works
+  // sections are, so reference lists and prose mentions stay out.
+  const dedicated = bibliography && bibliography.title !== article;
+  const page = dedicated ? bibliography : (bibliography ?? (await parsePage(article)));
   if (!page) return null;
-  const books = parseBibliography(page.html);
-  return { books, sourceTitle: page.title, sourceUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}` };
+  const headings = [...WORKS_HEADINGS, ...(bibliography?.fragment ? [bibliography.fragment.toLowerCase()] : [])];
+  const scope = dedicated ? null : new RegExp(`^(${headings.map((h) => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`, 'i');
+  const books = parseBibliography(page.html, scope);
+  return {
+    books,
+    sourceTitle: page.title,
+    sourceUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
+    mainArticle: !dedicated, // read from the works section of the author's own article
+  };
 }

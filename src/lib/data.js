@@ -33,8 +33,9 @@ export const getAuthors = () => getJson('authors.json');
 
 function getLiveAuthor(olKey) {
   return memo(`live:${olKey}`, async () => {
-    // Bumped when the shape changes (v2: Wikipedia lists; v3: reader counts) so older caches are ignored.
-    const storageKey = `letterbooks:cache:author-v3:${olKey}`;
+    // Bumped when the lists change (v2: Wikipedia lists; v3: reader counts; v4: series from
+    // table columns and captions, main-article works sections) so older caches are ignored.
+    const storageKey = `letterbooks:cache:author-v4:${olKey}`;
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey));
       if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) return saved.author;
@@ -161,8 +162,8 @@ export const TYPE_LABELS = { novel: 'Novel', collection: 'Collection', nonfictio
 // a time, and remembered for a month. Resolves to a cover id, or null to use
 // the book's default cover.
 
-// v2: standard editions only (no anniversary, tie-in or audio covers).
-const COVERS_KEY = 'letterbooks:cache:uk-covers-v2';
+// v3: standard editions only (no anniversary, named special, tie-in, audio or translated covers).
+const COVERS_KEY = 'letterbooks:cache:uk-covers-v3';
 let ukCovers;
 function savedUkCovers() {
   if (!ukCovers) {

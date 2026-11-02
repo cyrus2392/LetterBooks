@@ -42,7 +42,8 @@ export default {
     if (known === null && fallback) {
       // Not chosen yet: show the default cover now and choose in the background;
       // the browser checks back in five minutes.
-      ctx.waitUntil(chooseCover(ref, env));
+      // Fetch the chosen cover into the cache too, so the next view is quick.
+      ctx.waitUntil(chooseCover(ref, env).then((id) => id && image(id, size, env, ctx, 'public, max-age=86400')));
       return image(fallback, size, env, ctx, 'public, max-age=300');
     }
     const coverId = (known !== null ? (known === 'none' ? null : known) : await chooseCover(ref, env)) ?? fallback;

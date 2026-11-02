@@ -31,25 +31,57 @@ function getJson(path) {
 // Curated authors: [{ slug, name, olKey, bookCount, coverId }]
 export const getAuthors = () => getJson('authors.json');
 
+// Bumped when the lists change (v2: Wikipedia lists; v3: reader counts; v4: series from
+// table columns and captions, main-article works sections; v5: no TV credits) so older
+// caches aren't used while the sources can be reached.
+const LIVE_VERSION = 5;
+const liveKey = (olKey, version = LIVE_VERSION) => `letterbooks:cache:author-v${version}:${olKey}`;
+
+function readSaved(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
+// The newest saved copy of an author's list, however old, for when the
+// sources are down. Older versions' copies are rougher but better than nothing.
+function lastSaved(olKey) {
+  for (let v = LIVE_VERSION; v >= 2; v--) {
+    const saved = readSaved(liveKey(olKey, v));
+    if (saved?.author) return { ...saved.author, stale: { savedAt: saved.fetchedAt } };
+  }
+  return null;
+}
+
 function getLiveAuthor(olKey) {
-  return memo(`live:${olKey}`, async () => {
-    // Bumped when the lists change (v2: Wikipedia lists; v3: reader counts; v4: series from
-    // table columns and captions, main-article works sections) so older caches are ignored.
-    const storageKey = `letterbooks:cache:author-v5:${olKey}`;
+  const key = `live:${olKey}`;
+  return memo(key, async () => {
+    const saved = readSaved(liveKey(olKey));
+    if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) return saved.author;
+
+    let author;
     try {
-      const saved = JSON.parse(localStorage.getItem(storageKey));
-      if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) return saved.author;
-    } catch {
-      // No usable cache; fetch below.
+      author = await buildAuthor(olKey);
+    } catch (error) {
+      author = { source: { temporary: true }, error };
     }
-    const author = await buildAuthor(olKey);
-    // A fallback caused by Wikipedia being unreachable shouldn't stick for a week.
-    if (!author.source.temporary) {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify({ fetchedAt: Date.now(), author }));
-      } catch {
-        // Storage full or unavailable; it just won't be cached.
+    // Wikipedia or Open Library being unreachable: a saved copy beats an
+    // error or a rough guess. Forget it after this visit so the next one retries.
+    if (author.source.temporary) {
+      const fallback = lastSaved(olKey);
+      if (fallback) {
+        setTimeout(() => cache.delete(key));
+        return fallback;
       }
+      if (author.error) throw author.error;
+      return author; // shown, but not saved for a week
+    }
+    try {
+      localStorage.setItem(liveKey(olKey), JSON.stringify({ fetchedAt: Date.now(), author }));
+    } catch {
+      // Storage full or unavailable; it just won't be cached.
     }
     return author;
   });

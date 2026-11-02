@@ -7,6 +7,7 @@
   import { getAuthor, seriesOf } from '../lib/data.js';
   import { readCount, ownedCount, isHidden, isFollowing, setFollowing } from '../lib/store.svelte.js';
   import { isOlAuthorKey, normalizeTitle } from '../lib/sources.js';
+  import { formatDate } from '../lib/format.js';
 
   let { slug } = $props();
   const author = $derived(getAuthor(slug));
@@ -57,6 +58,13 @@
     <div class="progress"><Progress read={readCount(ids)} total={ids.length} /></div>
   </section>
 
+  {#if author.stale}
+    <p class="notice warn">
+      Open Library or Wikipedia can't be reached right now, so this is the copy of {author.name}'s list saved on
+      {formatDate(new Date(author.stale.savedAt).toLocaleDateString('en-CA'))}. It may be out of date; it'll refresh
+      once they're back.
+    </p>
+  {/if}
   {#if author.live && author.source?.name === 'Wikipedia'}
     <p class="notice">
       {#if author.source.mainArticle}
@@ -160,6 +168,8 @@
     font-size: 0.9rem;
     color: var(--muted);
   }
+
+  .notice.warn { border-left-color: var(--owned); color: var(--text); }
 
   .book-search {
     display: block;

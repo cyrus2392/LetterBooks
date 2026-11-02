@@ -2,7 +2,7 @@
 // scripts/import-author.mjs); any other author is built live from
 // Wikipedia + Open Library + Wikidata and cached in the browser for a week.
 
-import { buildAuthor, isOlAuthorKey, fetchWork, fetchUkCover, fetchBookDetails } from './sources.js';
+import { buildAuthor, isOlAuthorKey, fetchWork, fetchBookDetails } from './sources.js';
 
 const base = import.meta.env.BASE_URL;
 const cache = new Map();
@@ -152,63 +152,25 @@ export function seriesOf(author) {
     .sort((a, b) => a.books[0].year - b.books[0].year);
 }
 
-export const coverUrl = (coverId, size = 'M') =>
+// Covers come from the LetterBooks covers Worker on Cloudflare
+// (workers/covers), which picks each book's UK edition cover once and serves
+// images from Cloudflare's cache. It's free and needs no key.
+const COVERS_API = 'https://letterbooks-covers.benjfdickinson.workers.dev';
+
+// A specific cover (sizes: S, M, L).
+export const coverUrl = (coverId, size = 'M') => (coverId ? `${COVERS_API}/cover/id/${coverId}?size=${size}` : null);
+
+// A book's standard UK cover, chosen by the Worker; `fallbackId` (the work's
+// default cover) is used when there's no UK one.
+export const workCoverUrl = (workId, fallbackId, size = 'M') =>
+  `${COVERS_API}/cover/work/${workId}?size=${size}${fallbackId ? `&fallback=${fallbackId}` : ''}`;
+
+// Straight from Open Library: for when the Worker can't be reached, and for
+// browsing many editions in the cover picker without filling the Worker's cache.
+export const directCoverUrl = (coverId, size = 'M') =>
   coverId ? `https://covers.openlibrary.org/b/id/${coverId}-${size}.jpg` : null;
 
 export const TYPE_LABELS = { novel: 'Novel', collection: 'Collection', nonfiction: 'Non-fiction', children: "Children's book" };
-
-// UK covers. Curated books have theirs picked at import time (coverRegion is
-// set); for live authors each cover is looked up on first display, a few at
-// a time, and remembered for a month. Resolves to a cover id, or null to use
-// the book's default cover.
-
-// v3: standard editions only (no anniversary, named special, tie-in, audio or translated covers).
-const COVERS_KEY = 'letterbooks:cache:uk-covers-v3';
-let ukCovers;
-function savedUkCovers() {
-  if (!ukCovers) {
-    try {
-      ukCovers = JSON.parse(localStorage.getItem(COVERS_KEY)) ?? {};
-    } catch {
-      ukCovers = {};
-    }
-  }
-  return ukCovers;
-}
-
-const queue = [];
-let active = 0;
-function limited(task) {
-  return new Promise((resolve, reject) => {
-    queue.push(() => task().then(resolve, reject));
-    pump();
-  });
-}
-function pump() {
-  while (active < 4 && queue.length) {
-    active++;
-    queue.shift()().finally(() => {
-      active--;
-      pump();
-    });
-  }
-}
-
-export function ukCoverId(workId) {
-  const saved = savedUkCovers()[workId];
-  if (saved && Date.now() - saved.at < COVER_TTL) return Promise.resolve(saved.id);
-  return memo(`uk:${workId}`, () =>
-    limited(() => fetchUkCover(workId)).then((id) => {
-      savedUkCovers()[workId] = { id, at: Date.now() };
-      try {
-        localStorage.setItem(COVERS_KEY, JSON.stringify(ukCovers));
-      } catch {
-        // Not cached; it'll be looked up again next time.
-      }
-      return id;
-    }),
-  );
-}
 
 // Release date, synopsis and genres for a book page, remembered for a month.
 export function getBookDetails(book, authorName) {

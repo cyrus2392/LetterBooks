@@ -20,6 +20,11 @@ Any author can be found with the site's search and gets an automatic page from t
 1. Run `npm run add-author -- "Author Name"` to draft `data/curation/<author-slug>.json`, then review it: remove novellas, duplicates and bundles, and fix years, types and series. (Or create or edit `data/curation/<author-slug>.json` by hand; see `stephen-king.json`.)
 2. Run `npm run import-author -- <author-slug>`.
 3. Fix anything it reports as unmatched or missing a cover by adding `olKey` or `coverId` to that book in the curation file, then run it again.
+4. Run `npm run warm-covers -- <author-slug>` so their covers are already in the covers Worker's cache.
+
+## Covers Worker
+
+Covers are served by a Cloudflare Worker in `workers/covers` (free plan). It deploys automatically when its code changes, using the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
 
 ## Credits
 

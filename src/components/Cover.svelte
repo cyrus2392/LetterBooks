@@ -1,55 +1,34 @@
 <script>
-  import { coverUrl, ukCoverId } from '../lib/data.js';
+  import { coverUrl, workCoverUrl, directCoverUrl } from '../lib/data.js';
   import { lentTo, chosenCover } from '../lib/store.svelte.js';
 
   let { book, size = 'M' } = $props();
-  let failed = $state(false);
 
   // Books you've lent out get a "Lent out" band and a dimmed cover, wherever they appear.
   const loan = $derived(book.id ? lentTo(book.id) : null);
 
-  // A cover you've chosen wins. Otherwise curated books come with a UK cover
-  // already picked (coverRegion set), and any other Open Library work looks
-  // one up when it scrolls near the viewport.
+  // Covers come from the covers Worker: a cover you've chosen wins; curated
+  // books already have their UK cover picked (coverRegion set); for any other
+  // Open Library work the Worker picks the UK one. If the Worker can't be
+  // reached, the same cover (or the default one) comes straight from Open
+  // Library instead.
   const chosen = $derived(book.id ? chosenCover(book.id) : null);
-  const needsLookup = $derived(!chosen && !!book.olWorkId && !book.coverRegion);
-  let ukCover = $state(); // undefined while looking up; null when there's no UK cover
-  const coverId = $derived(
-    chosen ?? (needsLookup ? (ukCover === undefined ? undefined : (ukCover ?? book.coverId)) : book.coverId),
-  );
-  const src = $derived(coverId ? coverUrl(coverId, size) : null);
-
-  // Track whether the cover is near the viewport, and look up the UK cover
-  // once it is and a lookup is needed. Kept separate so a lookup can start
-  // later too, e.g. after you go back from a chosen cover to the automatic one.
-  let nearView = $state(false);
-  function watchVisibility(node) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        nearView = true;
-        observer.disconnect();
-      },
-      { rootMargin: '400px' },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }
-
-  $effect(() => {
-    if (!nearView || !needsLookup || ukCover !== undefined) return;
-    ukCoverId(book.olWorkId).then(
-      (id) => (ukCover = id),
-      () => (ukCover = null),
-    );
+  const sources = $derived.by(() => {
+    const id = chosen ?? book.coverId;
+    const viaWorker = chosen
+      ? coverUrl(chosen, size)
+      : book.olWorkId && !book.coverRegion
+        ? workCoverUrl(book.olWorkId, book.coverId, size)
+        : coverUrl(id, size);
+    return [viaWorker, directCoverUrl(id, size)].filter(Boolean);
   });
+  let failed = $state([]); // URLs that didn't load
+  const src = $derived(sources.find((url) => !failed.includes(url)) ?? null);
 </script>
 
-<div class="frame" class:lent={loan} {@attach watchVisibility}>
-  {#if coverId === undefined}
-    <div class="placeholder" aria-label="Loading cover for {book.title}"></div>
-  {:else if src && !failed}
-    <img {src} alt="Cover of {book.title}" loading="lazy" onerror={() => (failed = true)} />
+<div class="frame" class:lent={loan}>
+  {#if src}
+    <img {src} alt="Cover of {book.title}" loading="lazy" onerror={() => (failed = [...failed, src])} />
   {:else}
     <div class="placeholder" aria-label="No cover for {book.title}">
       <span>{book.title}</span>

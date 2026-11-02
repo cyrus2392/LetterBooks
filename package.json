@@ -7,7 +7,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "import-author": "node scripts/import-author.mjs",
-    "add-author": "node scripts/add-author.mjs"
+    "add-author": "node scripts/add-author.mjs",
+    "warm-covers": "node scripts/warm-covers.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "7.3.1",

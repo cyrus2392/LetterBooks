@@ -4,7 +4,7 @@
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
   import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
-  import { coverUrl } from '../lib/data.js';
+  import { directCoverUrl } from '../lib/data.js';
   import { fetchEditionCovers } from '../lib/sources.js';
   import { chosenCover, setChosenCover } from '../lib/store.svelte.js';
 
@@ -66,7 +66,7 @@
           <li>
             <button class="option" class:selected={c.coverId === current} aria-pressed={c.coverId === current}
                     aria-label="Use the {caption(c) || 'unlabelled'} cover" onclick={() => choose(c.coverId)}>
-              <img src={coverUrl(c.coverId, 'M')} alt="" loading="lazy" />
+              <img src={directCoverUrl(c.coverId, 'M')} alt="" loading="lazy" />
               {#if c.coverId === current}<span class="tick"><Icon icon={faCheck} /></span>{/if}
             </button>
             <span class="caption">{caption(c) || 'Unknown edition'}</span>

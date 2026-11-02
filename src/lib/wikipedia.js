@@ -14,7 +14,7 @@ async function api(base, params) {
   const url = `${base}?${new URLSearchParams({ format: 'json', formatversion: '2', origin: '*', ...params })}`;
   for (let attempt = 1; ; attempt++) {
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
       if (res.ok) return await res.json();
       if (res.status < 500 && res.status !== 429) throw Object.assign(new Error(`${res.status} from ${new URL(base).host}`), { final: true });
       throw new Error(`${res.status} from ${new URL(base).host}`);

@@ -13,7 +13,8 @@ const headers = isNode ? { 'User-Agent': 'LetterBooks/0.1 (https://github.com/cy
 
 async function getJson(url, init = {}) {
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(url, { ...init, headers: { ...headers, ...init.headers } });
+    // A source that hangs rather than refusing shouldn't hold a page up for minutes.
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000), ...init, headers: { ...headers, ...init.headers } });
     if (res.ok) return res.json();
     if (attempt === 3 || res.status < 500) throw new Error(`${res.status} from ${new URL(url).host}`);
     await new Promise((r) => setTimeout(r, 1000 * attempt));

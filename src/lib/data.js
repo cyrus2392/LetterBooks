@@ -55,29 +55,22 @@ function lastSaved(olKey) {
   return null;
 }
 
-function getLiveAuthor(olKey) {
-  const key = `live:${olKey}`;
-  return memo(key, async () => {
-    const saved = readSaved(liveKey(olKey));
-    if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) return saved.author;
+// How long an author page waits for a rebuild before showing the saved copy.
+const FALLBACK_AFTER = 6000;
+const fresh = new Map(); // olKey -> author, saved within LIVE_TTL
 
-    let author;
-    try {
-      author = await buildAuthor(olKey);
-    } catch (error) {
-      author = { source: { temporary: true }, error };
-    }
-    // Wikipedia or Open Library being unreachable: a saved copy beats an
-    // error or a rough guess. Forget it after this visit so the next one retries.
+// Builds an author's list from the sources and saves it. Shared, so the home
+// page and an author page waiting on the same author only build it once.
+function rebuild(olKey) {
+  const key = `build:${olKey}`;
+  return memo(key, async () => {
+    const author = await buildAuthor(olKey);
+    // A fallback caused by Wikipedia being unreachable shouldn't stick for a week.
     if (author.source.temporary) {
-      const fallback = lastSaved(olKey);
-      if (fallback) {
-        setTimeout(() => cache.delete(key));
-        return fallback;
-      }
-      if (author.error) throw author.error;
-      return author; // shown, but not saved for a week
+      setTimeout(() => cache.delete(key)); // try again next time
+      return author;
     }
+    fresh.set(olKey, author);
     try {
       localStorage.setItem(liveKey(olKey), JSON.stringify({ fetchedAt: Date.now(), author }));
     } catch {
@@ -87,24 +80,50 @@ function getLiveAuthor(olKey) {
   });
 }
 
+// `quick` (the home page): any saved copy is used straight away and
+// refreshed in the background. Otherwise a saved copy is only used when the
+// sources are down or slow: Wikipedia or Open Library being unreachable can
+// mean an error, a rough guess or a long wait, and a saved copy beats all three.
+async function getLiveAuthor(olKey, { quick = false } = {}) {
+  if (fresh.has(olKey)) return fresh.get(olKey);
+  const saved = readSaved(liveKey(olKey));
+  if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) {
+    fresh.set(olKey, saved.author);
+    return saved.author;
+  }
+  const build = rebuild(olKey);
+  const fallback = lastSaved(olKey);
+  if (!fallback) return build;
+  if (quick) {
+    build.catch(() => {}); // refreshes the saved copy for next time
+    return fallback;
+  }
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), FALLBACK_AFTER));
+  const author = await Promise.race([build.catch(() => null), timeout]);
+  return author && !author.source.temporary ? author : fallback;
+}
+
 // `ref` is a curated author's slug or an Open Library author key (OL…A).
 // An OL key that belongs to a curated author resolves to the curated data.
-export async function getAuthor(ref) {
+export async function getAuthor(ref, options) {
   if (isOlAuthorKey(ref)) {
     const curated = (await getAuthors()).find((a) => a.olKey === ref);
-    return curated ? getAuthor(curated.slug) : getLiveAuthor(ref);
+    return curated ? getAuthor(curated.slug) : getLiveAuthor(ref, options);
   }
   return getJson(`authors/${ref}.json`);
 }
 
 // Your authors: every curated author plus the given refs (authors you've
 // added, or read a book by), de-duplicated, loaded in full and sorted by
-// name. An author that fails to load is left out rather than breaking the list.
+// name. Saved lists are used as they are, so the page doesn't wait on the
+// sources. An author that fails to load, or takes too long with nothing
+// saved, is left out rather than holding up the list.
 export async function getYourAuthors(refs) {
   const curated = await getAuthors();
   const all = new Set(curated.map((a) => a.slug));
   for (const ref of refs) all.add(curated.find((a) => a.olKey === ref)?.slug ?? ref);
-  const results = await Promise.allSettled([...all].map(getAuthor));
+  const timeout = () => new Promise((_, reject) => setTimeout(() => reject(new Error('Too slow')), FALLBACK_AFTER));
+  const results = await Promise.allSettled([...all].map((ref) => Promise.race([getAuthor(ref, { quick: true }), timeout()])));
   return results
     .filter((r) => r.status === 'fulfilled')
     .map((r) => r.value)

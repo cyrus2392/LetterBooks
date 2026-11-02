@@ -35,7 +35,7 @@ function getLiveAuthor(olKey) {
   return memo(`live:${olKey}`, async () => {
     // Bumped when the lists change (v2: Wikipedia lists; v3: reader counts; v4: series from
     // table columns and captions, main-article works sections) so older caches are ignored.
-    const storageKey = `letterbooks:cache:author-v4:${olKey}`;
+    const storageKey = `letterbooks:cache:author-v5:${olKey}`;
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey));
       if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) return saved.author;

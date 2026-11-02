@@ -54,6 +54,9 @@ const SKIP_SECTION = new RegExp(
     '^sources', 'works about', 'awards', 'reception', 'as editor', 'edited', 'contribution', 'chapbook', 'limited edition',
     'omnibus', 'box(ed)? set', 'rock bottom', '^others?$', 'other media', 'music', '^plays?$', 'scripts', 'early life',
     'career', 'personal life', 'biography', 'legacy', 'death', 'influences', 'style', 'themes', 'honours', 'honors',
+    // TV and other on-screen work, e.g. "Production credits", "Presenting roles".
+    'credits', 'presenting', 'presenter', 'appearances', '\\broles?\\b', 'hosting', 'podcasts?', 'performances?',
+    'acting', 'video', 'discography', 'tv\\b',
   ].join('|'),
   'i',
 );
@@ -100,6 +103,12 @@ const WORKS_HEADINGS = [
   'publications', 'books', 'novels', 'writings', 'literary works', 'list of works',
 ];
 
+// Columns that only a table of TV, film or stage work has.
+const SCREEN_COLUMN = /^(role|roles|channel|network|broadcaster|station|director|episodes?|character|platform|venue|studio)$/;
+
+// "1st in the Thursday Murder Club series" in a notes column.
+const NOTES_SERIES = /\b(\d+)(?:st|nd|rd|th) (?:book |novel )?in the (.+?) (?:series|trilogy|saga)\b/i;
+
 const EDITION = /complete and uncut|uncut edition|(revised|expanded|anniversary|illustrated|special|collector's) edition/i;
 
 const yearIn = (text) => text.match(/\b(1[89]\d\d|20\d\d)\b/)?.[1];
@@ -141,6 +150,8 @@ function booksFromTable(table) {
   const rows = tableRows(table);
   const header = rows.find((r) => r.cells.length > 1 && r.cells.every((c) => c.tagName === 'TH' && c.getAttribute('scope') !== 'row'));
   const names = header ? header.row.map((c) => c.textContent.trim().toLowerCase()) : [];
+  // A TV credits table can sit under a heading that sounds like books.
+  if (names.some((n) => SCREEN_COLUMN.test(n))) return [];
   const col = (re) => names.findIndex((n) => re.test(n));
   const titleCol = col(/title|book|novel/);
   const yearCol = col(/year|published|date|release/);
@@ -149,6 +160,7 @@ function booksFromTable(table) {
   // e.g. "Harry Potter series" / "Young adult fiction".
   const seriesCol = col(/series/);
   const typeCol = col(/type|target|category|genre|format/);
+  const notesCol = col(/^notes?$/);
 
   const books = [];
   for (const { row, cells } of rows) {
@@ -165,15 +177,18 @@ function booksFromTable(table) {
     const cellText = titleCell.textContent.trim();
     // "(short story published in …)", "(contributor)" and the like.
     if (NOT_A_BOOK_NOTE.test(cellText.replace(italic?.textContent ?? '', ''))) continue;
-    const typeText = typeCol >= 0 && row[typeCol] !== titleCell ? row[typeCol].textContent.trim() : '';
-    const seriesText = seriesCol >= 0 && row[seriesCol] !== titleCell ? row[seriesCol].textContent.trim() : '';
+    const typeText = typeCol >= 0 && row[typeCol] !== titleCell ? (row[typeCol]?.textContent.trim() ?? '') : '';
+    const seriesText = seriesCol >= 0 && row[seriesCol] !== titleCell ? (row[seriesCol]?.textContent.trim() ?? '') : '';
     // Rows grouped as "Articles" or "original screenplays".
     if (SKIP_SECTION.test(typeText) || SKIP_SECTION.test(seriesText)) continue;
-    const series = /\bseries\b/i.test(seriesText) ? seriesName(seriesText.replace(/\bseries\b.*$/i, '')) : null;
+    const notes = notesCol >= 0 && row[notesCol] !== titleCell ? row[notesCol]?.textContent.match(NOTES_SERIES) : null;
+    const series = /\bseries\b/i.test(seriesText)
+      ? seriesName(seriesText.replace(/\bseries\b.*$/i, ''))
+      : notes ? seriesName(notes[2]) : null;
     const yearText = (yearCol >= 0 ? row[yearCol]?.textContent : null) ?? row.map((c) => c?.textContent ?? '').join(' ');
     // A position column, or a numbered title ("1. Harry Potter and…").
     const numbered = cellText.match(/^(\d+(?:\.\d+)?)[.)]\s/);
-    const position = numCol >= 0 ? parseFloat(row[numCol]?.textContent) : numbered ? parseFloat(numbered[1]) : NaN;
+    const position = numCol >= 0 ? parseFloat(row[numCol]?.textContent) : numbered ? parseFloat(numbered[1]) : notes ? Number(notes[1]) : NaN;
     books.push({
       title,
       year: Number(yearIn(yearText ?? '')) || null,
@@ -217,8 +232,11 @@ export function parseBibliography(html, scope = null) {
   const add = (found) => {
     const texts = [...headings.map((h) => h.text), ...(caption ? [caption] : [])];
     if (scope && !headings.some((h) => scope.test(h.text))) return;
-    if (texts.some((t) => SKIP_SECTION.test(t))) return;
-    const headingSeries = seriesFor(texts.filter((t) => !scope?.test(t)));
+    // A works section can sit inside one we'd skip, e.g. Career > Novels;
+    // only it and its subsections decide.
+    const from = scope ? headings.findIndex((h) => scope.test(h.text)) : 0;
+    if (texts.slice(from).some((t) => SKIP_SECTION.test(t))) return;
+    const headingSeries = seriesFor(texts.slice(from).filter((t) => !scope?.test(t)));
     found.forEach((b, i) => {
       // Quoted titles are short stories and novelettes, not books; special
       // editions are versions of a book that's already listed.

@@ -2,7 +2,9 @@
 //
 //   GET /cover/work/<OL work id>?size=S|M|L&fallback=<cover id>
 //       The book's standard UK edition cover (chosen with the site's own
-//       rules, remembered in KV for a month), else `fallback`.
+//       rules, remembered in KV for a month), else `fallback`. Working out
+//       the UK cover takes seconds, so the first time a book is asked for,
+//       `fallback` is served at once and the choice is made in the background.
 //   GET /cover/id/<cover id>?size=S|M|L
 //       A specific Open Library cover.
 //
@@ -35,27 +37,31 @@ export default {
     }
 
     if (!/^OL\d+W$/.test(ref)) return text(404, 'Not found');
-    const fallback = url.searchParams.get('fallback');
-    const coverId = (await chooseCover(ref, env, ctx)) ?? (/^\d+$/.test(fallback ?? '') ? fallback : null);
+    const fallback = /^\d+$/.test(url.searchParams.get('fallback') ?? '') ? url.searchParams.get('fallback') : null;
+    const known = await env.COVERS.get(`uk:${ref}`);
+    if (known === null && fallback) {
+      // Not chosen yet: show the default cover now and choose in the background;
+      // the browser checks back in five minutes.
+      ctx.waitUntil(chooseCover(ref, env));
+      return image(fallback, size, env, ctx, 'public, max-age=300');
+    }
+    const coverId = (known !== null ? (known === 'none' ? null : known) : await chooseCover(ref, env)) ?? fallback;
     if (!coverId) return text(404, 'No cover', 'public, max-age=86400');
     // The choice can be revisited, so browsers check back daily.
     return image(coverId, size, env, ctx, 'public, max-age=86400');
   },
 };
 
-// The book's standard UK cover id, from KV or worked out now. Failures aren't
-// remembered, so the next request tries again.
-async function chooseCover(workId, env, ctx) {
-  const key = `uk:${workId}`;
-  const saved = await env.COVERS.get(key);
-  if (saved !== null) return saved === 'none' ? null : saved;
+// Work out a book's standard UK cover id and remember it (or that there's
+// none). Failures aren't remembered, so the next request tries again.
+async function chooseCover(workId, env) {
   let id;
   try {
     id = await fetchUkCover(workId);
   } catch {
     return null;
   }
-  ctx.waitUntil(env.COVERS.put(key, id ? String(id) : 'none', { expirationTtl: CHOICE_TTL }).catch(() => {}));
+  await env.COVERS.put(`uk:${workId}`, id ? String(id) : 'none', { expirationTtl: CHOICE_TTL }).catch(() => {});
   return id ? String(id) : null;
 }
 
@@ -93,6 +99,7 @@ async function image(coverId, size, env, ctx, cacheControl) {
       'content-type': type,
       'cache-control': cacheControl,
       'access-control-allow-origin': '*',
+      'timing-allow-origin': '*', // lets the site see full load timings
       'x-letterbooks-cover': `${coverId}; from=${source}`,
     },
   });

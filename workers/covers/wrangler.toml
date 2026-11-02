@@ -1,0 +1,11 @@
+# LetterBooks covers Worker: picks each book's UK cover once and serves cover
+# images from Cloudflare. Deployed by .github/workflows/deploy-worker.yml.
+# Free plan only: Workers + KV + the Cache API (no R2, which needs a card).
+name = "letterbooks-covers"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "COVERS"
+id = "449c7b29e5fe4634bd04f72c10531686"

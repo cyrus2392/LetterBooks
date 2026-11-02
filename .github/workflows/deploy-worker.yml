@@ -1,0 +1,23 @@
+name: Deploy covers Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/covers/**'
+      - 'src/lib/sources.js'
+      - 'src/lib/wikipedia.js'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/covers
+          wranglerVersion: '4.151.1'

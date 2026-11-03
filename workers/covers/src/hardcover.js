@@ -1,0 +1,132 @@
+// Hardcover (hardcover.app) lookups for the site. They're made here because
+// Hardcover's API token has to stay secret and its API can't be used from a
+// browser: the token is a Worker secret (HARDCOVER_TOKEN), added in the
+// Cloudflare dashboard, never in the site or the repo. Tokens expire each
+// 1 January; until a new one is added, lookups fail and the site carries on
+// without Hardcover.
+//
+//   GET /hardcover/author?name=<author name>
+//       The author's books on Hardcover: title, year, pages, series, rating,
+//       cover. Remembered for a day, so most visits don't reach Hardcover
+//       (which allows 60 requests a minute).
+
+const API = 'https://api.hardcover.app/v1/graphql';
+const UA = 'LetterBooks/0.1 (https://github.com/cyrus2392/LetterBooks)';
+const DAY = 24 * 60 * 60;
+// Only the site (and a local dev server) may use the token.
+const ALLOWED_ORIGIN = /^(https:\/\/cyrus2392\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+
+// Hardcover allows queries three levels deep at most: books > book_series > series.
+const AUTHOR_BY_NAME = `query ($name: String!) {
+  authors(where: {name: {_eq: $name}}, order_by: {books_count: desc_nulls_last}, limit: 1) { id name slug }
+}`;
+const AUTHOR_SEARCH = `query ($q: String!) {
+  search(query: $q, query_type: "Author", per_page: 5) { results }
+}`;
+// Books the author wrote (not ones they only edited, illustrated or translated),
+// leaving out Hardcover's duplicate entries.
+const BOOKS = `query ($id: Int!) {
+  books(
+    where: {contributions: {author_id: {_eq: $id}, contribution: {_is_null: true}}, canonical_id: {_is_null: true}}
+    order_by: {users_count: desc_nulls_last}
+    limit: 500
+  ) {
+    title slug pages release_year rating ratings_count users_count compilation
+    image { url }
+    book_series { position series { name } }
+  }
+}`;
+
+export async function hardcoverAuthor(request, url, env, ctx) {
+  const origin = request.headers.get('origin') ?? '';
+  if (!ALLOWED_ORIGIN.test(origin)) return json(403, { error: 'Not allowed' }, origin);
+  const name = url.searchParams.get('name')?.trim();
+  if (!name || name.length > 120) return json(400, { error: 'Missing author name' }, origin);
+  if (!env.HARDCOVER_TOKEN) return json(503, { error: 'No Hardcover token set' }, origin);
+
+  const cacheKey = new Request(`https://letterbooks-hardcover.cache/v1/author/${encodeURIComponent(name.toLowerCase())}`);
+  const cached = await caches.default.match(cacheKey).catch(() => undefined);
+  if (cached) return json(200, await cached.json(), origin, 'cache');
+
+  let result;
+  try {
+    result = await lookUp(name, env);
+  } catch (error) {
+    // Not remembered, so the next request tries again.
+    return json(error.status ?? 502, { error: error.message }, origin);
+  }
+  const forCache = new Response(JSON.stringify(result), { headers: { 'cache-control': `public, max-age=${DAY}` } });
+  ctx.waitUntil(caches.default.put(cacheKey, forCache).catch(() => {}));
+  return json(200, result, origin, 'hardcover');
+}
+
+async function lookUp(name, env) {
+  let author = (await graphql(AUTHOR_BY_NAME, { name }, env)).authors[0];
+  if (!author) {
+    // Names are written differently ("J.R.R." / "J. R. R."), so search, but
+    // only accept an author with the same surname and first initial.
+    const { search } = await graphql(AUTHOR_SEARCH, { q: name }, env);
+    const hit = (search?.results?.hits ?? []).map((h) => h.document).find((d) => d?.name && sameName(d.name, name));
+    if (hit) author = { id: Number(hit.id), name: hit.name, slug: hit.slug };
+  }
+  if (!author) return { author: null, books: [] };
+
+  const { books } = await graphql(BOOKS, { id: author.id }, env);
+  return {
+    author: { name: author.name, slug: author.slug },
+    books: books
+      .filter((b) => b.title)
+      .map((b) => ({
+        title: b.title,
+        slug: b.slug,
+        year: b.release_year ?? null,
+        pages: b.pages || null,
+        rating: b.rating ? Math.round(b.rating * 100) / 100 : null,
+        ratings: b.ratings_count ?? 0,
+        readers: b.users_count ?? 0,
+        compilation: Boolean(b.compilation),
+        image: b.image?.url ?? null,
+        series: (b.book_series ?? [])
+          .filter((s) => s.series?.name)
+          .map((s) => ({ name: s.series.name, position: Number.isFinite(s.position) ? s.position : null })),
+      })),
+  };
+}
+
+const plain = (s) => s.normalize('NFKD').toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);
+function sameName(a, b) {
+  const [x, y] = [plain(a), plain(b)];
+  return x.length > 0 && y.length > 0 && x.at(-1) === y.at(-1) && x[0][0] === y[0][0];
+}
+
+async function graphql(query, variables, env) {
+  // Hardcover shows the token with "Bearer " in front; accept it either way.
+  const token = env.HARDCOVER_TOKEN.replace(/^bearer\s+/i, '').trim();
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}`, 'user-agent': UA },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) {
+    const message =
+      res.status === 401 ? 'Hardcover token expired or not valid' : res.status === 429 ? 'Hardcover rate limit reached' : `Hardcover returned ${res.status}`;
+    throw Object.assign(new Error(message), { status: res.status === 401 || res.status === 429 ? 503 : 502 });
+  }
+  const body = await res.json();
+  if (body.errors?.length) throw Object.assign(new Error(`Hardcover: ${body.errors[0].message}`), { status: 502 });
+  return body.data;
+}
+
+function json(status, body, origin, from = null) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': status === 200 ? 'public, max-age=3600' : 'no-store',
+      ...(ALLOWED_ORIGIN.test(origin) && { 'access-control-allow-origin': origin }),
+      vary: 'Origin',
+      ...(from && { 'x-letterbooks-from': from }),
+    },
+  });
+}

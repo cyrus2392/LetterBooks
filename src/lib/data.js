@@ -265,7 +265,7 @@ export const bookCoverUrl = (book, chosen, size = 'M') =>
     ? coverUrl(chosen, size)
     : book.olWorkId && !book.coverRegion
       ? workCoverUrl(book.olWorkId, book.coverId, size)
-      : coverUrl(book.coverId, size);
+      : (coverUrl(book.coverId, size) ?? book.image ?? null); // `image`: Hardcover's, when Open Library has none
 
 // Straight from Open Library: for when the Worker can't be reached, and for
 // browsing many editions in the cover picker without filling the Worker's cache.

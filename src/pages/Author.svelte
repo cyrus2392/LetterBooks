@@ -65,7 +65,14 @@
       once they're back.
     </p>
   {/if}
-  {#if author.live && author.source?.name === 'Wikipedia'}
+  {#if author.source?.openLibraryDown}
+    <p class="notice warn">
+      Open Library can't be reached right now, so this list was put together from
+      {author.source.name === 'Wikipedia' ? 'Wikipedia and Hardcover' : 'Hardcover'}, with Hardcover's covers.
+      It isn't saved: once Open Library is back, the full list replaces it. Books you mark as read in the meantime may
+      need marking again.
+    </p>
+  {:else if author.live && author.source?.name === 'Wikipedia'}
     <p class="notice">
       {#if author.source.mainArticle}
         This list comes from the works section of {author.name}'s

@@ -8,10 +8,11 @@
   const loan = $derived(book.id ? lentTo(book.id) : null);
 
   // Covers come from the covers Worker. If it can't be reached, the same
-  // cover (or the default one) comes straight from Open Library instead.
+  // cover (or the default one) comes straight from Open Library instead, and
+  // failing that Hardcover's cover, if the book has one.
   const chosen = $derived(book.id ? chosenCover(book.id) : null);
   const sources = $derived(
-    [bookCoverUrl(book, chosen, size), directCoverUrl(chosen ?? book.coverId, size)].filter(Boolean),
+    [...new Set([bookCoverUrl(book, chosen, size), directCoverUrl(chosen ?? book.coverId, size), !chosen && book.image])].filter(Boolean),
   );
   let failed = $state([]); // URLs that didn't load
   const src = $derived(sources.find((url) => !failed.includes(url)) ?? null);

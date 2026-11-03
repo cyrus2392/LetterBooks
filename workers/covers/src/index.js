@@ -7,6 +7,8 @@
 //       `fallback` is served at once and the choice is made in the background.
 //   GET /cover/id/<cover id>?size=S|M|L
 //       A specific Open Library cover.
+//   GET /hardcover/author?name=<author name>
+//       An author's books on Hardcover (see hardcover.js).
 //
 // Images are kept in Cloudflare's cache, with KV as a longer-lived backup,
 // and fetched from Open Library only when neither has them. Everything stays
@@ -14,6 +16,7 @@
 // day) the Worker just skips storing and still serves the image.
 
 import { fetchUkCover } from '../../../src/lib/sources.js';
+import { hardcoverAuthor } from './hardcover.js';
 
 const SIZES = new Set(['S', 'M', 'L']);
 const DAY = 24 * 60 * 60;
@@ -25,6 +28,7 @@ export default {
   async fetch(request, env, ctx) {
     if (request.method !== 'GET' && request.method !== 'HEAD') return text(405, 'Method not allowed');
     const url = new URL(request.url);
+    if (url.pathname === '/hardcover/author') return hardcoverAuthor(request, url, env, ctx);
     const match = url.pathname.match(/^\/cover\/(work|id)\/([A-Za-z0-9]+)$/);
     if (!match) return text(404, 'Not found');
     const [, kind, ref] = match;

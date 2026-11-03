@@ -4,7 +4,7 @@
 //
 // Shape (version 2):
 //   books[bookId] = {
-//     title, year, authorSlug, coverId, coverRegion   snapshot for lists like the profile
+//     title, year, authorSlug, coverId, coverRegion, image   snapshot for lists like the profile
 //     quickRead: true?, quickReadAt,     ticked as read without a log
 //     owned: true?, ownedAt,             on your physical shelf; independent of reading
 //     lent: { to, on }?                  currently lent out (owned books only)
@@ -72,6 +72,7 @@ function entry(book, authorSlug) {
   e.authorSlug = authorSlug;
   e.coverId = book.coverId ?? null;
   e.coverRegion = book.coverRegion ?? null;
+  e.image = book.image ?? null;
   return e;
 }
 
@@ -108,6 +109,7 @@ export function library() {
         year: e.year ?? null,
         coverId: e.coverId,
         coverRegion: e.coverRegion,
+        image: e.image ?? null,
         authorSlug: e.authorSlug,
         read: hasRead(e),
         owned: !!e.owned,
@@ -160,7 +162,7 @@ export function shelf(name) {
 // Every logged read across all books, newest first.
 export function diary() {
   return Object.entries(data.books)
-    .flatMap(([id, e]) => e.reads.map((r) => ({ ...r, bookId: id, title: e.title, authorSlug: e.authorSlug, coverId: e.coverId, coverRegion: e.coverRegion })))
+    .flatMap(([id, e]) => e.reads.map((r) => ({ ...r, bookId: id, title: e.title, authorSlug: e.authorSlug, coverId: e.coverId, coverRegion: e.coverRegion, image: e.image ?? null })))
     .sort((a, b) => (b.finishedOn ?? '').localeCompare(a.finishedOn ?? '') || b.loggedAt.localeCompare(a.loggedAt));
 }
 

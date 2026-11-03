@@ -5,7 +5,7 @@
   import LendDialog from '../components/LendDialog.svelte';
   import CoverPicker from '../components/CoverPicker.svelte';
   import Icon from '../components/Icon.svelte';
-  import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faRotateLeft, faImage } from '@fortawesome/free-solid-svg-icons';
+  import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faRotateLeft, faImage, faStar } from '@fortawesome/free-solid-svg-icons';
   import { getBook, getBookDetails, TYPE_LABELS } from '../lib/data.js';
   import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, chosenCover } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
@@ -62,6 +62,13 @@
         </dd>
         {#if book.pages}<dt>Length</dt><dd>{book.pages.toLocaleString()} pages</dd>{/if}
         {#if book.type}<dt>Type</dt><dd>{TYPE_LABELS[book.type] ?? book.type}</dd>{/if}
+        {#if book.hardcover?.rating}
+          <dt>On Hardcover</dt>
+          <dd>
+            <Icon icon={faStar} /> {book.hardcover.rating.toFixed(1)}
+            <span class="muted">from {book.hardcover.ratings.toLocaleString()} {book.hardcover.ratings === 1 ? 'rating' : 'ratings'}</span>
+          </dd>
+        {/if}
         {#await details then d}
           {#if d.genres.length}
             <dt>Genres</dt>
@@ -189,9 +196,11 @@
         </section>
       {/if}
 
-      {#if book.olWorkId}
+      {#if book.olWorkId || book.hardcover}
         <p class="source muted">
-          <a href="https://openlibrary.org/works/{book.olWorkId}" target="_blank" rel="noopener">View on Open Library</a>
+          {#if book.olWorkId}<a href="https://openlibrary.org/works/{book.olWorkId}" target="_blank" rel="noopener">View on Open Library</a>{/if}
+          {#if book.olWorkId && book.hardcover}·{/if}
+          {#if book.hardcover}<a href="https://hardcover.app/books/{book.hardcover.slug}" target="_blank" rel="noopener">View on Hardcover</a>{/if}
         </p>
       {/if}
     </div>

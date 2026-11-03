@@ -1,5 +1,6 @@
 // Live book data: bibliographies from Wikipedia, works and covers from Open
-// Library, series positions and years from Wikidata. Plain fetch with no
+// Library, series positions and years from Wikidata, and page counts, series,
+// ratings and covers from Hardcover to fill gaps. Plain fetch with no
 // Svelte, so it runs both in the browser (on-demand author pages) and in
 // Node (scripts/, which install a DOMParser for the Wikipedia parsing).
 
@@ -7,6 +8,8 @@ import { wikipediaBibliography } from './wikipedia.js';
 
 const OL = 'https://openlibrary.org';
 const WIKIDATA = 'https://query.wikidata.org/sparql';
+// The LetterBooks Worker (workers/covers), which looks things up on Hardcover.
+const WORKER = 'https://letterbooks-covers.benjfdickinson.workers.dev';
 const isNode = typeof window === 'undefined';
 // Browsers don't allow setting User-Agent; Open Library asks scripts to.
 const headers = isNode ? { 'User-Agent': 'LetterBooks/0.1 (https://github.com/cyrus2392/LetterBooks)' } : {};
@@ -191,13 +194,14 @@ function titleKeys(title) {
   return [...new Set([title, before, rest.join(': ')].filter(Boolean).map(normalizeTitle))];
 }
 
-// Open Library work for a book title: the most-published work with a matching title.
-export function matchWork(title, docs) {
+// Open Library work for a book title: the most-published work with a
+// matching title. `weight` picks between same-titled entries in other lists.
+export function matchWork(title, docs, weight = (d) => d.edition_count ?? 0) {
   const index = new Map();
   for (const d of docs) {
     for (const key of titleKeys(d.title)) {
       const prev = index.get(key);
-      if (!prev || (d.edition_count ?? 0) > (prev.edition_count ?? 0)) index.set(key, d);
+      if (!prev || weight(d) > weight(prev)) index.set(key, d);
     }
   }
   for (const key of titleKeys(title)) {
@@ -210,7 +214,7 @@ export function matchWork(title, docs) {
   for (const [key, d] of index) {
     const shorter = key.length < target.length ? key : target;
     const longer = shorter === key ? target : key;
-    if (shorter.length >= 8 && longer.endsWith(shorter) && (!best || (d.edition_count ?? 0) > (best.edition_count ?? 0))) best = d;
+    if (shorter.length >= 8 && longer.endsWith(shorter) && (!best || weight(d) > weight(best))) best = d;
   }
   return best;
 }
@@ -285,31 +289,95 @@ function booksFromWikipedia(olKey, wikiBooks, docs, wikidata) {
   return books;
 }
 
+// When Open Library can't be reached, a best guess at the real books from
+// Hardcover's list instead: books people have actually shelved, one per title.
+function guessBooksFromHardcover(olKey, hcBooks) {
+  const thisYear = new Date().getFullYear();
+  const byTitle = new Map();
+  for (const b of hcBooks) {
+    if (!b.year || b.year > thisYear || b.compilation || b.readers < 5 || NOT_A_BOOK.test(b.title)) continue;
+    const key = normalizeTitle(b.title.replace(/[:.(].*$/, ''));
+    if (!byTitle.has(key) || b.readers > byTitle.get(key).readers) byTitle.set(key, b);
+  }
+  return [...byTitle.values()].map((b) => ({ id: `${olKey}-${normalizeTitle(b.title)}`, olWorkId: null, title: b.title, year: b.year, coverId: null, readers: 0 }));
+}
+
+// Fills what a book is missing from its Hardcover entry: length, series,
+// a cover (only used when Open Library has none), plus Hardcover's rating.
+function addHardcover(books, hcBooks) {
+  for (const book of books) {
+    const hc = matchWork(book.title, hcBooks, (b) => b.readers);
+    if (!hc) continue;
+    if (!book.pages && hc.pages) book.pages = hc.pages;
+    if (!book.series?.length && hc.series.length) book.series = hc.series;
+    if (!book.coverId && hc.image) book.image = hc.image;
+    book.hardcover = { slug: hc.slug, rating: hc.rating, ratings: hc.ratings };
+  }
+}
+
+// An author's books on Hardcover, via the Worker; null if Hardcover can't be
+// reached or has no token set (lookups don't work from Node scripts either).
+async function fetchHardcover(name) {
+  if (isNode) return null;
+  try {
+    const res = await fetch(`${WORKER}/hardcover/author?name=${encodeURIComponent(name)}`, { signal: AbortSignal.timeout(10000) });
+    return res.ok ? (await res.json()).books : null;
+  } catch {
+    return null;
+  }
+}
+
+// An author's name from Wikidata, for when Open Library can't be reached.
+async function wikidataAuthorName(olKey) {
+  const query = `SELECT ?name WHERE { ?author wdt:P648 "${olKey}" ; rdfs:label ?name . FILTER(LANG(?name) = "en") } LIMIT 1`;
+  const { results } = await getJson(`${WIKIDATA}?format=json&query=${encodeURIComponent(query)}`, {
+    headers: { Accept: 'application/sparql-results+json' },
+  });
+  return results.bindings[0]?.name.value ?? null;
+}
+
 // Build an author's bibliography automatically: Wikipedia's bibliography
 // when it has one, otherwise a best guess from Open Library. Either way,
-// books are matched to Open Library works for ids and covers.
+// books are matched to Open Library works for ids and covers, and gaps are
+// filled from Hardcover. If Open Library can't be reached, Hardcover stands
+// in for it, and the list is marked temporary so it's rebuilt later with
+// Open Library's ids (which your reading log refers to).
 export async function buildAuthor(olKey) {
-  const [author, docs, wikidata, wiki] = await Promise.all([
-    getJson(`${OL}/authors/${olKey}.json`),
-    fetchOpenLibraryDocs(olKey),
+  const author = getJson(`${OL}/authors/${olKey}.json`).catch(() => null);
+  const name = author.then((a) => a?.name ?? wikidataAuthorName(olKey).catch(() => null));
+  const [authorName, docs, wikidata, wiki, hcBooks] = await Promise.all([
+    name,
+    fetchOpenLibraryDocs(olKey).catch(() => null),
     fetchWikidataWorks(olKey).catch(() => new Map()), // series are a bonus; don't fail without them
     wikipediaBibliography(olKey).catch((error) => ({ error })),
+    name.then((n) => (n ? fetchHardcover(n) : null)),
   ]);
-
+  const olDown = !(await author) || !docs;
   // A main article with only a handful of italicised titles isn't a bibliography.
   const useWikipedia = wiki && !wiki.error && wiki.books.length >= 8;
-  const books = useWikipedia ? booksFromWikipedia(olKey, wiki.books, docs, wikidata) : guessBooksFromOpenLibrary(olKey, docs, wikidata);
+  if (!authorName || (olDown && !useWikipedia && !hcBooks?.length)) throw new Error("Open Library can't be reached");
+  const books = useWikipedia
+    ? booksFromWikipedia(olKey, wiki.books, docs ?? [], wikidata)
+    : olDown
+      ? guessBooksFromHardcover(olKey, hcBooks)
+      : guessBooksFromOpenLibrary(olKey, docs, wikidata);
+  if (hcBooks) addHardcover(books, hcBooks);
   books.sort((a, b) => a.year - b.year || a.title.localeCompare(b.title));
 
   return {
     slug: olKey,
-    name: author.name,
+    name: authorName,
     olKey,
     live: true,
-    // `temporary` marks a fallback caused by Wikipedia being unreachable, which shouldn't be cached.
-    source: useWikipedia
-      ? { name: 'Wikipedia', title: wiki.sourceTitle, url: wiki.sourceUrl, mainArticle: wiki.mainArticle }
-      : { name: 'Open Library', ...(wiki?.error && { temporary: true }) },
+    // `temporary` marks a fallback caused by Wikipedia or Open Library being
+    // unreachable, which shouldn't be cached.
+    source: {
+      ...(useWikipedia
+        ? { name: 'Wikipedia', title: wiki.sourceTitle, url: wiki.sourceUrl, mainArticle: wiki.mainArticle }
+        : { name: olDown ? 'Hardcover' : 'Open Library' }),
+      ...((olDown || (!useWikipedia && wiki?.error)) && { temporary: true }),
+      ...(olDown && { openLibraryDown: true }),
+    },
     updatedAt: new Date().toISOString().slice(0, 10),
     books,
   };

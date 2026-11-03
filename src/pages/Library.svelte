@@ -2,6 +2,9 @@
   // Your bookshelf (books you own) and the books you've read, side by side.
   // Owning and reading are independent, so each tab can be narrowed by the other.
   import BookCard from '../components/BookCard.svelte';
+  import Spine from '../components/Spine.svelte';
+  import Icon from '../components/Icon.svelte';
+  import { faBookOpen, faTableCells } from '@fortawesome/free-solid-svg-icons';
   import { library } from '../lib/store.svelte.js';
   import { getAuthorNames, surnameKey } from '../lib/data.js';
   import { normalizeTitle } from '../lib/sources.js';
@@ -29,6 +32,35 @@
       // Not remembered; the default applies next time.
     }
   });
+
+  // Shelf (spines, like a real bookshelf) or covers; remembered like the sort.
+  const VIEW_KEY = 'letterbooks:library-view';
+  let view = $state(savedView());
+  function savedView() {
+    try {
+      return localStorage.getItem(VIEW_KEY) === 'covers' ? 'covers' : 'shelf';
+    } catch {
+      return 'shelf';
+    }
+  }
+  $effect(() => {
+    try {
+      localStorage.setItem(VIEW_KEY, view);
+    } catch {
+      // Not remembered; the shelf shows next time.
+    }
+  });
+
+  // Shelf height follows the screen, so phones fit a useful number of spines per row.
+  let narrow = $state(false);
+  $effect(() => {
+    const query = matchMedia('(max-width: 600px)');
+    narrow = query.matches;
+    const update = () => (narrow = query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const shelfHeight = $derived(narrow ? 150 : 200);
 
   const all = $derived(library());
   const owned = $derived(all.filter((b) => b.owned));
@@ -127,6 +159,14 @@
   <datalist id="library-authors">
     {#each tabAuthors as name}<option value={name}></option>{/each}
   </datalist>
+  <div class="views" role="group" aria-label="View">
+    <button class="view" aria-pressed={view === 'shelf'} title="Shelf" aria-label="Shelf view" onclick={() => (view = 'shelf')}>
+      <Icon icon={faBookOpen} />
+    </button>
+    <button class="view" aria-pressed={view === 'covers'} title="Covers" aria-label="Covers view" onclick={() => (view = 'covers')}>
+      <Icon icon={faTableCells} />
+    </button>
+  </div>
   <label class="sort">
     Sort
     <select bind:value={sort}>
@@ -137,7 +177,13 @@
   </label>
 </div>
 
-{#if shown.length}
+{#if shown.length && view === 'shelf'}
+  <div class="shelves" style:--shelf="{shelfHeight}px">
+    {#each shown as book (book.id)}
+      <div class="slot"><Spine {book} authorName={authorOf(book)} shelf={shelfHeight} /></div>
+    {/each}
+  </div>
+{:else if shown.length}
   <div class="grid">
     {#each shown as book (book.id)}
       <BookCard {book} authorSlug={book.authorSlug} authorName={authorOf(book)} />
@@ -221,6 +267,57 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 4px 8px;
+  }
+
+  .views { display: flex; gap: 4px; margin-left: auto; }
+
+  .view {
+    width: 32px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  .view[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
+
+  /* The bookcase: rows of spines standing on wooden shelves, between two uprights. */
+  .shelves {
+    --board: 14px;
+    --row: calc(var(--shelf) + 18px + var(--board));
+    --wood: #6b4a30;
+    --wood-light: #8a6243;
+    --wood-dark: #3e2a1b;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    column-gap: 3px;
+    padding: 0 14px;
+    border-left: 10px solid var(--wood-dark);
+    border-right: 10px solid var(--wood-dark);
+    border-radius: 4px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0 calc(var(--row) - var(--board)),
+        var(--wood-light) calc(var(--row) - var(--board)) calc(var(--row) - var(--board) + 3px),
+        var(--wood) calc(var(--row) - var(--board) + 3px) calc(var(--row) - 4px),
+        var(--wood-dark) calc(var(--row) - 4px) var(--row)
+      ),
+      linear-gradient(to bottom, rgb(0 0 0 / 0.28), rgb(0 0 0 / 0.12)),
+      var(--surface);
+    /* Keep the shelves out of the way of covers swinging past the ends. */
+    overflow: visible;
+  }
+
+  .slot {
+    height: var(--row);
+    padding-bottom: var(--board);
+    display: flex;
+    align-items: flex-end;
   }
 
   .grid {

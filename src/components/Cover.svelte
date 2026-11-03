@@ -1,5 +1,5 @@
 <script>
-  import { coverUrl, workCoverUrl, directCoverUrl } from '../lib/data.js';
+  import { bookCoverUrl, directCoverUrl } from '../lib/data.js';
   import { lentTo, chosenCover } from '../lib/store.svelte.js';
 
   let { book, size = 'M' } = $props();
@@ -7,21 +7,12 @@
   // Books you've lent out get a "Lent out" band and a dimmed cover, wherever they appear.
   const loan = $derived(book.id ? lentTo(book.id) : null);
 
-  // Covers come from the covers Worker: a cover you've chosen wins; curated
-  // books already have their UK cover picked (coverRegion set); for any other
-  // Open Library work the Worker picks the UK one. If the Worker can't be
-  // reached, the same cover (or the default one) comes straight from Open
-  // Library instead.
+  // Covers come from the covers Worker. If it can't be reached, the same
+  // cover (or the default one) comes straight from Open Library instead.
   const chosen = $derived(book.id ? chosenCover(book.id) : null);
-  const sources = $derived.by(() => {
-    const id = chosen ?? book.coverId;
-    const viaWorker = chosen
-      ? coverUrl(chosen, size)
-      : book.olWorkId && !book.coverRegion
-        ? workCoverUrl(book.olWorkId, book.coverId, size)
-        : coverUrl(id, size);
-    return [viaWorker, directCoverUrl(id, size)].filter(Boolean);
-  });
+  const sources = $derived(
+    [bookCoverUrl(book, chosen, size), directCoverUrl(chosen ?? book.coverId, size)].filter(Boolean),
+  );
   let failed = $state([]); // URLs that didn't load
   const src = $derived(sources.find((url) => !failed.includes(url)) ?? null);
 </script>

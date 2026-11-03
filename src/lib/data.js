@@ -216,6 +216,16 @@ export const coverUrl = (coverId, size = 'M') => (coverId ? `${COVERS_API}/cover
 export const workCoverUrl = (workId, fallbackId, size = 'M') =>
   `${COVERS_API}/cover/work/${workId}?size=${size}${fallbackId ? `&fallback=${fallbackId}` : ''}`;
 
+// The Worker URL for the cover a book shows: a cover you've chosen wins;
+// curated books already have their UK cover picked (coverRegion set); for
+// any other Open Library work the Worker picks the UK one.
+export const bookCoverUrl = (book, chosen, size = 'M') =>
+  chosen
+    ? coverUrl(chosen, size)
+    : book.olWorkId && !book.coverRegion
+      ? workCoverUrl(book.olWorkId, book.coverId, size)
+      : coverUrl(book.coverId, size);
+
 // Straight from Open Library: for when the Worker can't be reached, and for
 // browsing many editions in the cover picker without filling the Worker's cache.
 export const directCoverUrl = (coverId, size = 'M') =>

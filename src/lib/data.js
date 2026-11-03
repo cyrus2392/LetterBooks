@@ -103,6 +103,33 @@ async function getLiveAuthor(olKey, { quick = false } = {}) {
   return author && !author.source.temporary ? author : fallback;
 }
 
+// Rebuilds these authors' lists now, however recently they were saved, to
+// pick up new details such as page counts. Curated authors come with the
+// site, so they're always current and skipped. A few at a time, to go easy
+// on the sources. A rebuild that fails keeps the saved list.
+export async function refreshAuthors(refs, onProgress) {
+  const curated = await getAuthors();
+  const live = [...new Set(refs)].filter((ref) => isOlAuthorKey(ref) && !curated.some((a) => a.olKey === ref));
+  const queue = [...live];
+  let done = 0;
+  let failed = 0;
+  await Promise.all(
+    Array.from({ length: 3 }, async () => {
+      for (let ref; (ref = queue.shift()); ) {
+        cache.delete(`build:${ref}`);
+        fresh.delete(ref);
+        try {
+          if ((await rebuild(ref)).source.temporary) failed++;
+        } catch {
+          failed++;
+        }
+        onProgress?.(++done, live.length);
+      }
+    }),
+  );
+  return { total: live.length, failed };
+}
+
 // `ref` is a curated author's slug or an Open Library author key (OL…A).
 // An OL key that belongs to a curated author resolves to the curated data.
 export async function getAuthor(ref, options) {

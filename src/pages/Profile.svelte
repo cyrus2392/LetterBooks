@@ -2,7 +2,7 @@
   import Cover from '../components/Cover.svelte';
   import Stars from '../components/Stars.svelte';
   import { totalRead, totalOwned, shelf, diary, library, exportData, importData, dismissedCount, clearDismissed } from '../lib/store.svelte.js';
-  import { getPageCounts } from '../lib/data.js';
+  import { getPageCounts, refreshAuthors } from '../lib/data.js';
   import { formatDate } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -19,13 +19,31 @@
   // Pages read: each book you've read counts once, if its length is known.
   const readList = $derived(library().filter((b) => b.read));
   let pages = $state(null); // { total, missing }
+  let refreshes = $state(0); // bumped after a refresh, to count again
   $effect(() => {
+    refreshes;
     const list = readList;
     getPageCounts(list).then((counts) => {
       const known = list.filter((b) => counts.has(b.id));
       pages = { total: known.reduce((sum, b) => sum + counts.get(b.id), 0), missing: list.length - known.length };
     });
   });
+
+  // Re-fetch the authors of everything you've read, for page counts and other
+  // details added since their lists were saved.
+  let refreshing = $state(null); // { done, total } while running
+  async function refresh() {
+    refreshing = { done: 0, total: 0 };
+    message = '';
+    const { total, failed } = await refreshAuthors(readList.map((b) => b.authorSlug), (done, total) => (refreshing = { done, total }));
+    refreshing = null;
+    refreshes++;
+    message = !total
+      ? 'Everything you’ve read is already up to date.'
+      : failed
+        ? `Refreshed ${total - failed} of ${total} authors. ${failed} couldn't be reached, so ${failed === 1 ? 'keeps its' : 'keep their'} saved list; try again later.`
+        : `Refreshed ${total} ${total === 1 ? 'author' : 'authors'} of the books you've read.`;
+  }
 
   function download() {
     const blob = new Blob([exportData()], { type: 'application/json' });
@@ -126,10 +144,14 @@
   <h2>Your data</h2>
   <p class="muted">
     Your reading history is saved in this browser only. Export a backup now and then, or to move it to another device.
+    Refresh fetches the latest details (such as page counts) for the books you've read.
   </p>
   <div class="actions">
     <button class="btn" onclick={download}>Export</button>
     <button class="btn" onclick={() => fileInput.click()}>Import…</button>
+    <button class="btn" onclick={refresh} disabled={!!refreshing || !readList.length}>
+      {refreshing ? `Refreshing… ${refreshing.done}/${refreshing.total || '…'}` : 'Refresh read books'}
+    </button>
     <input bind:this={fileInput} type="file" accept="application/json,.json" class="sr-only" onchange={upload} tabindex="-1" />
   </div>
   {#if message}<p role="status">{message}</p>{/if}
@@ -228,7 +250,7 @@
 
   .backup { margin-top: 48px; max-width: 560px; }
 
-  .actions { display: flex; gap: 10px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
   .link {
     background: none;

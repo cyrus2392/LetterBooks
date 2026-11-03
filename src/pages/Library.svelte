@@ -6,7 +6,7 @@
   import Icon from '../components/Icon.svelte';
   import { faBookOpen, faTableCells } from '@fortawesome/free-solid-svg-icons';
   import { library } from '../lib/store.svelte.js';
-  import { getAuthorNames, surnameKey } from '../lib/data.js';
+  import { getAuthorNames, getPageCounts, surnameKey } from '../lib/data.js';
   import { normalizeTitle } from '../lib/sources.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -73,6 +73,12 @@
     getAuthorNames(all.map((b) => b.authorSlug)).then((m) => (names = m));
   });
   const authorOf = (b) => names.get(b.authorSlug) ?? '';
+
+  // Page counts size the spines; until they arrive, spines get a natural mix of widths.
+  let pageCounts = $state(new Map());
+  $effect(() => {
+    getPageCounts(all).then((m) => (pageCounts = m));
+  });
 
   // Filter by author name (ignoring case and punctuation), with the authors
   // in the current tab suggested as you type.
@@ -180,7 +186,7 @@
 {#if shown.length && view === 'shelf'}
   <div class="shelves" style:--shelf="{shelfHeight}px">
     {#each shown as book (book.id)}
-      <div class="slot"><Spine {book} authorName={authorOf(book)} shelf={shelfHeight} /></div>
+      <div class="slot"><Spine {book} authorName={authorOf(book)} shelf={shelfHeight} pages={pageCounts.get(book.id)} /></div>
     {/each}
   </div>
 {:else if shown.length}

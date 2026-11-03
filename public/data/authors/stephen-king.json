@@ -12,6 +12,7 @@
       "type": "novel",
       "coverId": 12108271,
       "readers": 380,
+      "pages": 255,
       "coverRegion": "uk"
     },
     {
@@ -22,6 +23,7 @@
       "type": "novel",
       "coverId": 14654614,
       "readers": 232,
+      "pages": 509,
       "coverRegion": "uk"
     },
     {
@@ -38,6 +40,7 @@
       ],
       "coverId": 14654031,
       "readers": 466,
+      "pages": 506,
       "coverRegion": "uk"
     },
     {
@@ -49,6 +52,7 @@
       "pseudonym": "Richard Bachman",
       "coverId": 8565707,
       "readers": 39,
+      "pages": 249,
       "coverRegion": "default"
     },
     {
@@ -59,6 +63,7 @@
       "type": "collection",
       "coverId": 10145920,
       "readers": 79,
+      "pages": 384,
       "coverRegion": "uk"
     },
     {
@@ -69,6 +74,7 @@
       "type": "novel",
       "coverId": 15253669,
       "readers": 198,
+      "pages": 1153,
       "coverRegion": "uk"
     },
     {
@@ -80,6 +86,7 @@
       "pseudonym": "Richard Bachman",
       "coverId": 14653609,
       "readers": 98,
+      "pages": 352,
       "coverRegion": "default"
     },
     {
@@ -90,6 +97,7 @@
       "type": "novel",
       "coverId": 2403718,
       "readers": 125,
+      "pages": 426,
       "coverRegion": "uk"
     },
     {
@@ -100,6 +108,7 @@
       "type": "novel",
       "coverId": 8762601,
       "readers": 87,
+      "pages": 428,
       "coverRegion": "uk"
     },
     {
@@ -110,6 +119,7 @@
       "type": "nonfiction",
       "coverId": 14652880,
       "readers": 102,
+      "pages": 479,
       "coverRegion": "uk"
     },
     {
@@ -121,6 +131,7 @@
       "pseudonym": "Richard Bachman",
       "coverId": 14651941,
       "readers": 33,
+      "pages": 362,
       "coverRegion": "uk"
     },
     {
@@ -131,6 +142,7 @@
       "type": "novel",
       "coverId": 14652519,
       "readers": 133,
+      "pages": 352,
       "coverRegion": "uk"
     },
     {
@@ -142,6 +154,7 @@
       "pseudonym": "Richard Bachman",
       "coverId": 12412351,
       "readers": 80,
+      "pages": 256,
       "coverRegion": "uk"
     },
     {
@@ -158,6 +171,7 @@
       ],
       "coverId": 8761178,
       "readers": 172,
+      "pages": 256,
       "coverRegion": "uk"
     },
     {
@@ -168,6 +182,7 @@
       "type": "collection",
       "coverId": 10509865,
       "readers": 57,
+      "pages": 529,
       "coverRegion": "uk"
     },
     {
@@ -178,6 +193,7 @@
       "type": "novel",
       "coverId": 10357658,
       "readers": 126,
+      "pages": 503,
       "coverRegion": "uk"
     },
     {
@@ -188,6 +204,7 @@
       "type": "novel",
       "coverId": 12625028,
       "readers": 304,
+      "pages": 423,
       "coverRegion": "uk"
     },
     {
@@ -198,6 +215,7 @@
       "type": "novel",
       "coverId": 291371,
       "readers": 47,
+      "pages": 150,
       "coverRegion": "uk"
     },
     {
@@ -217,6 +235,7 @@
       ],
       "coverId": 2396591,
       "readers": 30,
+      "pages": 769,
       "coverRegion": "uk"
     },
     {
@@ -228,6 +247,7 @@
       "pseudonym": "Richard Bachman",
       "coverId": 15214140,
       "readers": 116,
+      "pages": 318,
       "coverRegion": "uk"
     },
     {
@@ -238,6 +258,7 @@
       "type": "collection",
       "coverId": 10299398,
       "readers": 98,
+      "pages": 573,
       "coverRegion": "uk"
     },
     {
@@ -248,6 +269,7 @@
       "type": "novel",
       "coverId": 15255912,
       "readers": 621,
+      "pages": 1168,
       "coverRegion": "uk"
     },
     {
@@ -258,6 +280,7 @@
       "type": "novel",
       "coverId": 11302139,
       "readers": 79,
+      "pages": 382,
       "coverRegion": "uk"
     },
     {
@@ -274,6 +297,7 @@
       ],
       "coverId": 15254410,
       "readers": 184,
+      "pages": 455,
       "coverRegion": "uk"
     },
     {
@@ -284,6 +308,7 @@
       "type": "novel",
       "coverId": 14656010,
       "readers": 305,
+      "pages": 382,
       "coverRegion": "uk"
     },
     {
@@ -294,6 +319,7 @@
       "type": "novel",
       "coverId": 8792499,
       "readers": 65,
+      "pages": 725,
       "coverRegion": "uk"
     },
     {
@@ -304,6 +330,7 @@
       "type": "nonfiction",
       "coverId": 7092369,
       "readers": 6,
+      "pages": 128,
       "coverRegion": "default"
     },
     {
@@ -314,6 +341,7 @@
       "type": "novel",
       "coverId": 8668007,
       "readers": 76,
+      "pages": 474,
       "coverRegion": "uk"
     },
     {
@@ -324,6 +352,7 @@
       "type": "collection",
       "coverId": 14652837,
       "readers": 70,
+      "pages": 768,
       "coverRegion": "uk"
     },
     {
@@ -334,6 +363,7 @@
       "type": "novel",
       "coverId": 10549310,
       "readers": 108,
+      "pages": 698,
       "coverRegion": "uk"
     },
     {
@@ -350,6 +380,7 @@
       ],
       "coverId": 15254412,
       "readers": 156,
+      "pages": 566,
       "coverRegion": "uk"
     },
     {
@@ -360,6 +391,7 @@
       "type": "novel",
       "coverId": 14657013,
       "readers": 92,
+      "pages": 400,
       "coverRegion": "uk"
     },
     {
@@ -370,6 +402,7 @@
       "type": "novel",
       "coverId": 14655033,
       "readers": 79,
+      "pages": 307,
       "coverRegion": "uk"
     },
     {
@@ -380,6 +413,7 @@
       "type": "collection",
       "coverId": 8756854,
       "readers": 65,
+      "pages": 702,
       "coverRegion": "uk"
     },
     {
@@ -390,6 +424,7 @@
       "type": "novel",
       "coverId": 10548142,
       "readers": 152,
+      "pages": 719,
       "coverRegion": "uk"
     },
     {
@@ -400,6 +435,7 @@
       "type": "novel",
       "coverId": 14654572,
       "readers": 79,
+      "pages": 487,
       "coverRegion": "uk"
     },
     {
@@ -410,6 +446,7 @@
       "type": "novel",
       "coverId": 15270082,
       "readers": 241,
+      "pages": 465,
       "coverRegion": "uk"
     },
     {
@@ -420,6 +457,7 @@
       "type": "novel",
       "coverId": 11627656,
       "readers": 61,
+      "pages": 616,
       "coverRegion": "uk"
     },
     {
@@ -431,6 +469,7 @@
       "pseudonym": "Richard Bachman",
       "coverId": 11415857,
       "readers": 28,
+      "pages": 448,
       "coverRegion": "uk"
     },
     {
@@ -447,6 +486,7 @@
       ],
       "coverId": 15254467,
       "readers": 140,
+      "pages": 718,
       "coverRegion": "uk"
     },
     {
@@ -457,6 +497,7 @@
       "type": "novel",
       "coverId": 14652838,
       "readers": 97,
+      "pages": 608,
       "coverRegion": "uk"
     },
     {
@@ -467,6 +508,7 @@
       "type": "novel",
       "coverId": 15254982,
       "readers": 90,
+      "pages": 256,
       "coverRegion": "uk"
     },
     {
@@ -477,6 +519,7 @@
       "type": "collection",
       "coverId": 14652528,
       "readers": 92,
+      "pages": 610,
       "coverRegion": "uk"
     },
     {
@@ -487,6 +530,7 @@
       "type": "nonfiction",
       "coverId": 8784453,
       "readers": 144,
+      "pages": 288,
       "coverRegion": "uk"
     },
     {
@@ -497,6 +541,7 @@
       "type": "nonfiction",
       "coverId": 8666991,
       "readers": 0,
+      "pages": 432,
       "coverRegion": "default"
     },
     {
@@ -507,6 +552,7 @@
       "type": "novel",
       "coverId": 14652854,
       "readers": 89,
+      "pages": 736,
       "coverRegion": "uk"
     },
     {
@@ -526,6 +572,7 @@
       ],
       "coverId": 14653089,
       "readers": 14,
+      "pages": 672,
       "coverRegion": "uk"
     },
     {
@@ -536,6 +583,7 @@
       "type": "novel",
       "coverId": 14652495,
       "readers": 74,
+      "pages": 456,
       "coverRegion": "uk"
     },
     {
@@ -546,6 +594,7 @@
       "type": "collection",
       "coverId": 10306601,
       "readers": 71,
+      "pages": 480,
       "coverRegion": "uk"
     },
     {
@@ -562,6 +611,7 @@
       ],
       "coverId": 14652409,
       "readers": 214,
+      "pages": 714,
       "coverRegion": "uk"
     },
     {
@@ -578,6 +628,7 @@
       ],
       "coverId": 15254413,
       "readers": 116,
+      "pages": 457,
       "coverRegion": "uk"
     },
     {
@@ -594,6 +645,7 @@
       ],
       "coverId": 15254470,
       "readers": 66,
+      "pages": 790,
       "coverRegion": "uk"
     },
     {
@@ -607,6 +659,7 @@
       ],
       "coverId": 12621050,
       "readers": 0,
+      "pages": 432,
       "coverRegion": "uk"
     },
     {
@@ -617,6 +670,7 @@
       "type": "novel",
       "coverId": 8380883,
       "readers": 40,
+      "pages": 184,
       "coverRegion": "default"
     },
     {
@@ -627,6 +681,7 @@
       "type": "novel",
       "coverId": 14652706,
       "readers": 152,
+      "pages": 460,
       "coverRegion": "uk"
     },
     {
@@ -637,6 +692,7 @@
       "type": "novel",
       "coverId": 14652544,
       "readers": 51,
+      "pages": 608,
       "coverRegion": "uk"
     },
     {
@@ -648,6 +704,7 @@
       "pseudonym": "Richard Bachman",
       "coverId": 10358247,
       "readers": 37,
+      "pages": 328,
       "coverRegion": "uk"
     },
     {
@@ -658,6 +715,7 @@
       "type": "novel",
       "coverId": 12071686,
       "readers": 89,
+      "pages": 668,
       "coverRegion": "uk"
     },
     {
@@ -668,6 +726,7 @@
       "type": "collection",
       "coverId": 10191710,
       "readers": 60,
+      "pages": 448,
       "coverRegion": "uk"
     },
     {
@@ -678,6 +737,7 @@
       "type": "novel",
       "coverId": 14652408,
       "readers": 118,
+      "pages": 1074,
       "coverRegion": "uk"
     },
     {
@@ -688,6 +748,7 @@
       "type": "collection",
       "coverId": 10870941,
       "readers": 75,
+      "pages": 464,
       "coverRegion": "uk"
     },
     {
@@ -698,6 +759,7 @@
       "type": "novel",
       "coverId": 15254483,
       "readers": 161,
+      "pages": 849,
       "coverRegion": "uk"
     },
     {
@@ -714,6 +776,7 @@
       ],
       "coverId": 13869792,
       "readers": 32,
+      "pages": 344,
       "coverRegion": "uk"
     },
     {
@@ -724,6 +787,7 @@
       "type": "novel",
       "coverId": 9154939,
       "readers": 42,
+      "pages": 318,
       "coverRegion": "uk"
     },
     {
@@ -740,6 +804,7 @@
       ],
       "coverId": 15255534,
       "readers": 95,
+      "pages": 560,
       "coverRegion": "uk"
     },
     {
@@ -756,6 +821,7 @@
       ],
       "coverId": 10708772,
       "readers": 116,
+      "pages": 484,
       "coverRegion": "uk"
     },
     {
@@ -766,6 +832,7 @@
       "type": "novel",
       "coverId": 14744991,
       "readers": 44,
+      "pages": 437,
       "coverRegion": "uk"
     },
     {
@@ -782,6 +849,7 @@
       ],
       "coverId": 15254480,
       "readers": 58,
+      "pages": 448,
       "coverRegion": "uk"
     },
     {
@@ -792,6 +860,7 @@
       "type": "collection",
       "coverId": 12108574,
       "readers": 53,
+      "pages": 600,
       "coverRegion": "uk"
     },
     {
@@ -808,6 +877,7 @@
       ],
       "coverId": 15254481,
       "readers": 44,
+      "pages": 440,
       "coverRegion": "uk"
     },
     {
@@ -819,6 +889,7 @@
       "pseudonym": "Beryl Evans",
       "coverId": 14657246,
       "readers": 1,
+      "pages": 28,
       "coverRegion": "default"
     },
     {
@@ -838,6 +909,7 @@
       ],
       "coverId": 11112084,
       "readers": 11,
+      "pages": 176,
       "coverRegion": "uk"
     },
     {
@@ -851,6 +923,7 @@
       ],
       "coverId": 14653719,
       "readers": 8,
+      "pages": 843,
       "coverRegion": "uk"
     },
     {
@@ -867,6 +940,7 @@
       ],
       "coverId": 15254484,
       "readers": 26,
+      "pages": 576,
       "coverRegion": "uk"
     },
     {
@@ -877,6 +951,7 @@
       "type": "novel",
       "coverId": 14652881,
       "readers": 37,
+      "pages": 160,
       "coverRegion": "uk"
     },
     {
@@ -887,6 +962,7 @@
       "type": "novel",
       "coverId": 14653086,
       "readers": 47,
+      "pages": 624,
       "coverRegion": "uk"
     },
     {
@@ -897,6 +973,7 @@
       "type": "collection",
       "coverId": 14654038,
       "readers": 13,
+      "pages": 457,
       "coverRegion": "uk"
     },
     {
@@ -907,6 +984,7 @@
       "type": "novel",
       "coverId": 14654000,
       "readers": 11,
+      "pages": 286,
       "coverRegion": "default"
     },
     {
@@ -917,6 +995,7 @@
       "type": "novel",
       "coverId": 14655670,
       "readers": 32,
+      "pages": 608,
       "coverRegion": "uk"
     },
     {
@@ -936,6 +1015,7 @@
       ],
       "coverId": 14682351,
       "readers": 2,
+      "pages": 408,
       "coverRegion": "uk"
     },
     {
@@ -946,6 +1026,7 @@
       "type": "novel",
       "coverId": 14776617,
       "readers": 36,
+      "pages": 762,
       "coverRegion": "uk"
     },
     {
@@ -962,6 +1043,7 @@
       ],
       "coverId": 14725378,
       "readers": 19,
+      "pages": 480,
       "coverRegion": "uk"
     },
     {
@@ -972,6 +1054,7 @@
       "type": "collection",
       "coverId": 14852513,
       "readers": 7,
+      "pages": 504,
       "coverRegion": "uk"
     },
     {
@@ -988,6 +1071,7 @@
       ],
       "coverId": 14825714,
       "readers": 3,
+      "pages": 439,
       "coverRegion": "default"
     },
     {
@@ -1017,6 +1101,7 @@
       ],
       "coverId": 13902310,
       "readers": 5,
+      "pages": 400,
       "coverRegion": "default"
     }
   ]

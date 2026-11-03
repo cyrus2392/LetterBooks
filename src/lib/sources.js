@@ -81,7 +81,7 @@ export async function fetchWork(workId) {
 
 // Every Open Library work by an author (unfiltered).
 async function fetchOpenLibraryDocs(olKey) {
-  const fields = 'key,title,first_publish_year,edition_count,cover_i,language,author_key,already_read_count';
+  const fields = 'key,title,first_publish_year,edition_count,cover_i,language,author_key,already_read_count,number_of_pages_median';
   const { docs } = await getJson(`${OL}/search.json?author_key=${olKey}&fields=${fields}&limit=2000&sort=editions`);
   return docs.filter((d) => d.title);
 }
@@ -135,6 +135,8 @@ function guessBooksFromOpenLibrary(olKey, docs, wikidata) {
       ...(series.length && { series }),
       coverId: d.cover_i ?? null,
       readers: d.already_read_count ?? 0,
+      // Typical length across its editions.
+      ...(d.number_of_pages_median && { pages: d.number_of_pages_median }),
     });
   }
   return books;
@@ -276,6 +278,7 @@ function booksFromWikipedia(olKey, wikiBooks, docs, wikidata) {
       ...(series.length && { series }),
       coverId: doc?.cover_i ?? null,
       readers: doc?.already_read_count ?? 0,
+      ...(doc?.number_of_pages_median && { pages: doc.number_of_pages_median }),
     });
   }
   checkSeriesPositions(books);
@@ -454,7 +457,7 @@ export async function fetchGenres(workId) {
 // ratings. Older classics and children's/YA books otherwise crowd out
 // everything else (Open Library tags Harry Potter as science fiction).
 export async function popularInGenre(query, limit = 60) {
-  const fields = 'key,title,author_name,author_key,cover_i,first_publish_year,already_read_count,ratings_average';
+  const fields = 'key,title,author_name,author_key,cover_i,first_publish_year,already_read_count,ratings_average,number_of_pages_median';
   const q = `subject:"${query}" language:eng first_publish_year:[1950 TO *] -subject:"juvenile fiction" -subject:"young adult fiction"`;
   const { docs } = await getJson(`${OL}/search.json?q=${encodeURIComponent(q)}&sort=readinglog&fields=${fields}&limit=${limit}`);
   return docs
@@ -468,6 +471,8 @@ export async function popularInGenre(query, limit = 60) {
       year: d.first_publish_year ?? null,
       coverId: d.cover_i ?? null,
       readers: d.already_read_count ?? 0,
+      // Typical length across its editions.
+      ...(d.number_of_pages_median && { pages: d.number_of_pages_median }),
       rating: d.ratings_average ?? null,
       authorKey: d.author_key[0],
       authorName: d.author_name?.[0] ?? 'Unknown',

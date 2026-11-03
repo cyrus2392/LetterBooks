@@ -32,9 +32,9 @@ function getJson(path) {
 export const getAuthors = () => getJson('authors.json');
 
 // Bumped when the lists change (v2: Wikipedia lists; v3: reader counts; v4: series from
-// table columns and captions, main-article works sections; v5: no TV credits) so older
+// table columns and captions, main-article works sections; v5: no TV credits; v6: page counts) so older
 // caches aren't used while the sources can be reached.
-const LIVE_VERSION = 5;
+const LIVE_VERSION = 6;
 const liveKey = (olKey, version = LIVE_VERSION) => `letterbooks:cache:author-v${version}:${olKey}`;
 
 function readSaved(key) {
@@ -163,6 +163,20 @@ export async function getAuthorNames(refs) {
     // Not cached.
   }
   return names;
+}
+
+// Page counts for books you've saved (which only store a few details), from
+// their authors' lists. Books without a known length are left out. Nothing
+// waits on this, so it takes fresh lists (older saved ones have no lengths).
+export async function getPageCounts(books) {
+  const refs = [...new Set(books.map((b) => b.authorSlug))];
+  const authors = await Promise.allSettled(refs.map((ref) => getAuthor(ref)));
+  const pages = new Map();
+  for (const r of authors) {
+    if (r.status !== 'fulfilled') continue;
+    for (const b of r.value.books) if (b.pages) pages.set(b.id, b.pages);
+  }
+  return pages;
 }
 
 // "Stephen King" -> "king stephen", so authors sort by surname. Suffixes such

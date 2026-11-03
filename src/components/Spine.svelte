@@ -10,9 +10,10 @@
   import { spineShape, spineColour, knownColour, fallbackColour, inkFor } from '../lib/spines.js';
 
   // `shelf` is the height of the shelf in px; books stand a little shorter.
-  let { book, authorName = '', shelf = 200 } = $props();
+  // `pages`, if known, sets how thick the spine is.
+  let { book, authorName = '', shelf = 200, pages = null } = $props();
 
-  const shape = $derived(spineShape(book.id));
+  const shape = $derived(spineShape(book.id, pages));
   const height = $derived(Math.round(shelf * shape.height));
   // Thinner spines on shorter (phone) shelves, so a row still holds plenty.
   const width = $derived(Math.round((shape.width * shelf) / 200));

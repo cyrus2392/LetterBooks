@@ -60,6 +60,7 @@
             {book.year ?? 'Unknown'}
           {/await}
         </dd>
+        {#if book.pages}<dt>Length</dt><dd>{book.pages.toLocaleString()} pages</dd>{/if}
         {#if book.type}<dt>Type</dt><dd>{TYPE_LABELS[book.type] ?? book.type}</dd>{/if}
         {#await details then d}
           {#if d.genres.length}

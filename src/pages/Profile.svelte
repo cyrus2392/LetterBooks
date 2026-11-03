@@ -1,7 +1,8 @@
 <script>
   import Cover from '../components/Cover.svelte';
   import Stars from '../components/Stars.svelte';
-  import { totalRead, totalOwned, shelf, diary, exportData, importData, dismissedCount, clearDismissed } from '../lib/store.svelte.js';
+  import { totalRead, totalOwned, shelf, diary, library, exportData, importData, dismissedCount, clearDismissed } from '../lib/store.svelte.js';
+  import { getPageCounts } from '../lib/data.js';
   import { formatDate } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -14,6 +15,17 @@
   const reading = $derived(shelf('reading'));
   const tbr = $derived(shelf('tbr'));
   const recent = $derived(diary().slice(0, 10));
+
+  // Pages read: each book you've read counts once, if its length is known.
+  const readList = $derived(library().filter((b) => b.read));
+  let pages = $state(null); // { total, missing }
+  $effect(() => {
+    const list = readList;
+    getPageCounts(list).then((counts) => {
+      const known = list.filter((b) => counts.has(b.id));
+      pages = { total: known.reduce((sum, b) => sum + counts.get(b.id), 0), missing: list.length - known.length };
+    });
+  });
 
   function download() {
     const blob = new Blob([exportData()], { type: 'application/json' });
@@ -64,6 +76,12 @@
     <div class="number">{totalRead()}</div>
     <div class="label">{totalRead() === 1 ? 'book' : 'books'} read</div>
   </a>
+  {#if pages?.total}
+    <div class="stat" title={pages.missing ? `${pages.missing} ${pages.missing === 1 ? "book doesn't" : "books don't"} have a known length, so ${pages.missing === 1 ? "isn't" : "aren't"} counted` : undefined}>
+      <div class="number">{pages.total.toLocaleString()}</div>
+      <div class="label">pages read{#if pages.missing}<span class="note"> · {pages.missing} without a length</span>{/if}</div>
+    </div>
+  {/if}
   <a class="stat" href={href('library', 'owned')}>
     <div class="number owned">{totalOwned()}</div>
     <div class="label">on your bookshelf</div>
@@ -151,6 +169,8 @@
   a.stat:hover { border-color: var(--accent); }
 
   .label { margin-top: 6px; color: var(--muted); font-weight: 600; }
+
+  .note { font-weight: 400; font-size: 0.85em; }
 
   .shelf { margin-top: 40px; }
 

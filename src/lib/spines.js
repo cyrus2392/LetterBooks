@@ -12,11 +12,14 @@ function hash(text) {
   return h >>> 0;
 }
 
-// Stable per book, so the shelf doesn't reshuffle between visits.
-export function spineShape(id) {
+// Stable per book, so the shelf doesn't reshuffle between visits. Width is
+// for a 200px shelf: thicker for longer books (a 250-page book is slim, a
+// 1,100-page one a doorstop), or varied a little when the length isn't known.
+export function spineShape(id, pages = null) {
   const h = hash(id);
+  const jitter = (h >>> 16) % 5 - 2;
   return {
-    width: 30 + (h % 21), // px
+    width: pages ? Math.min(72, Math.max(26, 18 + pages * 0.04)) + jitter : 30 + (h % 21), // px
     height: 0.86 + ((h >>> 8) % 15) / 100, // share of the shelf's height
   };
 }

@@ -2,7 +2,7 @@
 // scripts/import-author.mjs); any other author is built live from
 // Wikipedia + Open Library + Wikidata and cached in the browser for a week.
 
-import { buildAuthor, isOlAuthorKey, fetchWork, fetchBookDetails } from './sources.js';
+import { buildAuthor, isOlAuthorKey, fetchWork, fetchBookDetails, normalizeTitle } from './sources.js';
 
 const base = import.meta.env.BASE_URL;
 const cache = new Map();
@@ -219,9 +219,22 @@ export function surnameKey(name) {
 // that aren't in the author's list (e.g. filtered out, or found by search).
 export async function getBook(authorRef, bookId) {
   const author = await getAuthor(authorRef);
-  const book = author.books.find((b) => b.id === bookId) ?? (author.live ? await memo(`work:${bookId}`, () => fetchWork(bookId)) : null);
+  const book =
+    author.books.find((b) => b.id === bookId) ??
+    byTitle(author, bookId) ??
+    (author.live && /^OL\d+W$/.test(bookId) ? await memo(`work:${bookId}`, () => fetchWork(bookId)) : null);
   if (!book) throw new Error('Book not found');
   return { author, book };
+}
+
+// Search results found without Open Library link to "<author key>-<title>"
+// (the id an author's list gives books it has no Open Library id for), so
+// find the book by its title in whatever the author's list has now.
+function byTitle(author, bookId) {
+  const prefix = [author.olKey, author.slug].filter(Boolean).find((p) => bookId.startsWith(`${p}-`));
+  if (!prefix) return null;
+  const title = bookId.slice(prefix.length + 1);
+  return author.books.find((b) => normalizeTitle(b.title) === title || normalizeTitle(b.title.split(/:\s+/)[0]) === title) ?? null;
 }
 
 // Series an author's books belong to, each with its books in reading order.

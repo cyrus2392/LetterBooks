@@ -66,7 +66,7 @@
       {@const fresh = authors.filter((a) => !local.knownKeys.has(a.olKey))}
       <h2>Authors on {source}</h2>
       {#if source !== 'Open Library'}
-        <p class="muted note">Open Library can't be reached right now, so these results come from Wikidata.</p>
+        <p class="muted note">Open Library can't be reached right now, so these results come from {source}.</p>
       {/if}
       {#if fresh.length}
         <ul class="authors">
@@ -96,7 +96,7 @@
       <p class="muted">Searching…</p>
     {:then { source, books }}
       {@const localIds = new Set(local.books.map((b) => b.id))}
-      {@const fresh = books.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, olWorkId: b.id, authorRef: b.authorKey }))}
+      {@const fresh = books.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, authorRef: b.authorKey }))}
       <h2>Books on {source}</h2>
       {#if fresh.length}
         {@render bookList(fresh)}

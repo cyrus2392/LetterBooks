@@ -163,10 +163,16 @@ function booksFromTable(table) {
   const notesCol = col(/^notes?$/);
 
   const books = [];
+  let group = '';
   for (const { row, cells } of rows) {
     if (!row.length || (header && row === header.row)) continue;
-    // Group header rows inside a table, e.g. "First Era".
-    if (cells.length === 1 && cells[0].tagName === 'TH') continue;
+    // Group header rows inside a table, e.g. "First Era"; ones like "Short
+    // stories" leave out the rows under them.
+    if (cells.length === 1 && cells[0].tagName === 'TH') {
+      group = cells[0].textContent.trim();
+      continue;
+    }
+    if (SKIP_SECTION.test(group)) continue;
     const titleCell = row[titleCol] ?? cells.find((c) => c.getAttribute('scope') === 'row') ?? cells.find((c) => c.querySelector('i'));
     if (!titleCell) continue;
     const italic = titleCell.querySelector('i');

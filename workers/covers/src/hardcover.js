@@ -9,6 +9,9 @@
 //       The author's books on Hardcover: title, year, pages, series, rating,
 //       cover. Remembered for a day, so most visits don't reach Hardcover
 //       (which allows 60 requests a minute).
+//   GET /hardcover/search?type=author|book&q=<text>
+//       Hardcover's search: authors (name, book count) or books (title,
+//       authors, year, cover), most-read first. Remembered for a day.
 
 const API = 'https://api.hardcover.app/v1/graphql';
 const UA = 'LetterBooks/0.1 (https://github.com/cyrus2392/LetterBooks)';
@@ -39,29 +42,63 @@ const BOOKS = `query ($id: Int!) {
 // Credits that aren't writing the book.
 const NOT_AUTHOR = /editor|illustrat|translat|narrat|introduc|foreword|afterword|contributor|cover|read by/i;
 
-export async function hardcoverAuthor(request, url, env, ctx) {
+export function hardcoverAuthor(request, url, env, ctx) {
+  const name = url.searchParams.get('name')?.trim();
+  return answer(request, env, ctx, name, `v2/author/${name?.toLowerCase()}`, () => lookUp(name, env), (r) => r.books.length);
+}
+
+export function hardcoverSearch(request, url, env, ctx) {
+  const q = url.searchParams.get('q')?.trim();
+  const type = url.searchParams.get('type') === 'author' ? 'Author' : 'Book';
+  return answer(request, env, ctx, q, `v1/search/${type}/${q?.toLowerCase()}`, () => search(q, type, env), (r) => r.results.length);
+}
+
+// Checks the request, then answers from the cache or Hardcover.
+async function answer(request, env, ctx, input, cachePath, look, found) {
   const origin = request.headers.get('origin') ?? '';
   if (!ALLOWED_ORIGIN.test(origin)) return json(403, { error: 'Not allowed' }, origin);
-  const name = url.searchParams.get('name')?.trim();
-  if (!name || name.length > 120) return json(400, { error: 'Missing author name' }, origin);
+  if (!input || input.length > 120) return json(400, { error: 'Missing search text or name' }, origin);
   if (!env.HARDCOVER_TOKEN) return json(503, { error: 'No Hardcover token set' }, origin);
 
-  const cacheKey = new Request(`https://letterbooks-hardcover.cache/v2/author/${encodeURIComponent(name.toLowerCase())}`);
+  const cacheKey = new Request(`https://letterbooks-hardcover.cache/${encodeURIComponent(cachePath)}`);
   const cached = await caches.default.match(cacheKey).catch(() => undefined);
   if (cached) return json(200, await cached.json(), origin, 'cache');
 
   let result;
   try {
-    result = await lookUp(name, env);
+    result = await look();
   } catch (error) {
     // Not remembered, so the next request tries again.
     return json(error.status ?? 502, { error: error.message }, origin);
   }
   // An empty answer may be a passing problem, so it's only kept for an hour.
-  const keep = result.books.length ? DAY : DAY / 24;
+  const keep = found(result) ? DAY : DAY / 24;
   const forCache = new Response(JSON.stringify(result), { headers: { 'cache-control': `public, max-age=${keep}` } });
   ctx.waitUntil(caches.default.put(cacheKey, forCache).catch(() => {}));
   return json(200, result, origin, 'hardcover');
+}
+
+const SEARCH = `query ($q: String!, $type: String!) {
+  search(query: $q, query_type: $type, per_page: 10) { results }
+}`;
+
+async function search(q, type, env) {
+  const { search } = await graphql(SEARCH, { q, type }, env);
+  const docs = (search?.results?.hits ?? []).map((h) => h.document).filter(Boolean);
+  return {
+    results:
+      type === 'Author'
+        ? docs.filter((d) => d.name).map((d) => ({ name: d.name, books: d.books_count ?? null }))
+        : docs
+            .filter((d) => d.title)
+            .map((d) => ({
+              title: d.title,
+              slug: d.slug,
+              authors: d.author_names ?? [],
+              year: d.release_year ?? null,
+              image: d.image?.url ?? null,
+            })),
+  };
 }
 
 async function lookUp(name, env) {

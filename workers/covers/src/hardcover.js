@@ -23,19 +23,21 @@ const AUTHOR_BY_NAME = `query ($name: String!) {
 const AUTHOR_SEARCH = `query ($q: String!) {
   search(query: $q, query_type: "Author", per_page: 5) { results }
 }`;
-// Books the author wrote (not ones they only edited, illustrated or translated),
-// leaving out Hardcover's duplicate entries.
+// Books the author is credited on, leaving out Hardcover's duplicate entries.
 const BOOKS = `query ($id: Int!) {
   books(
-    where: {contributions: {author_id: {_eq: $id}, contribution: {_is_null: true}}, canonical_id: {_is_null: true}}
+    where: {contributions: {author_id: {_eq: $id}}, canonical_id: {_is_null: true}}
     order_by: {users_count: desc_nulls_last}
     limit: 500
   ) {
     title slug pages release_year rating ratings_count users_count compilation
     image { url }
+    contributions { author_id contribution }
     book_series { position series { name } }
   }
 }`;
+// Credits that aren't writing the book.
+const NOT_AUTHOR = /editor|illustrat|translat|narrat|introduc|foreword|afterword|contributor|cover|read by/i;
 
 export async function hardcoverAuthor(request, url, env, ctx) {
   const origin = request.headers.get('origin') ?? '';
@@ -44,7 +46,7 @@ export async function hardcoverAuthor(request, url, env, ctx) {
   if (!name || name.length > 120) return json(400, { error: 'Missing author name' }, origin);
   if (!env.HARDCOVER_TOKEN) return json(503, { error: 'No Hardcover token set' }, origin);
 
-  const cacheKey = new Request(`https://letterbooks-hardcover.cache/v1/author/${encodeURIComponent(name.toLowerCase())}`);
+  const cacheKey = new Request(`https://letterbooks-hardcover.cache/v2/author/${encodeURIComponent(name.toLowerCase())}`);
   const cached = await caches.default.match(cacheKey).catch(() => undefined);
   if (cached) return json(200, await cached.json(), origin, 'cache');
 
@@ -55,7 +57,9 @@ export async function hardcoverAuthor(request, url, env, ctx) {
     // Not remembered, so the next request tries again.
     return json(error.status ?? 502, { error: error.message }, origin);
   }
-  const forCache = new Response(JSON.stringify(result), { headers: { 'cache-control': `public, max-age=${DAY}` } });
+  // An empty answer may be a passing problem, so it's only kept for an hour.
+  const keep = result.books.length ? DAY : DAY / 24;
+  const forCache = new Response(JSON.stringify(result), { headers: { 'cache-control': `public, max-age=${keep}` } });
   ctx.waitUntil(caches.default.put(cacheKey, forCache).catch(() => {}));
   return json(200, result, origin, 'hardcover');
 }
@@ -72,10 +76,11 @@ async function lookUp(name, env) {
   if (!author) return { author: null, books: [] };
 
   const { books } = await graphql(BOOKS, { id: author.id }, env);
+  const wrote = (b) => (b.contributions ?? []).some((c) => c.author_id === author.id && !NOT_AUTHOR.test(c.contribution ?? ''));
   return {
     author: { name: author.name, slug: author.slug },
     books: books
-      .filter((b) => b.title)
+      .filter((b) => b.title && wrote(b))
       .map((b) => ({
         title: b.title,
         slug: b.slug,

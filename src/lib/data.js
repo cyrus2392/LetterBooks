@@ -206,6 +206,24 @@ export async function getPageCounts(books) {
   return pages;
 }
 
+// The numbered series each book is in, for keeping series together on the
+// shelf: bookId -> { name, position }. Series without numbers (Sanderson's
+// "Cosmere", which spans unrelated standalones) don't count.
+export async function getShelfSeries(books) {
+  const refs = [...new Set(books.map((b) => b.authorSlug))];
+  const authors = await Promise.allSettled(refs.map((ref) => getAuthor(ref)));
+  const byRef = new Map(refs.map((ref, i) => [ref, authors[i].status === 'fulfilled' ? authors[i].value : null]));
+  const found = new Map();
+  for (const b of books) {
+    const author = byRef.get(b.authorSlug);
+    if (!author) continue;
+    const book = author.books.find((x) => x.id === b.id) ?? byTitle(author, b.id);
+    const s = book?.series?.find((x) => Number.isFinite(x.position));
+    if (s) found.set(b.id, { name: s.name, position: s.position });
+  }
+  return found;
+}
+
 // "Stephen King" -> "king stephen", so authors sort by surname. Suffixes such
 // as "Jr." are skipped when finding the surname.
 export function surnameKey(name) {

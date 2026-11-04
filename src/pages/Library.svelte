@@ -6,7 +6,7 @@
   import Icon from '../components/Icon.svelte';
   import { faBookOpen, faTableCells } from '@fortawesome/free-solid-svg-icons';
   import { library } from '../lib/store.svelte.js';
-  import { getAuthorNames, getPageCounts, surnameKey } from '../lib/data.js';
+  import { getAuthorNames, getPageCounts, getShelfSeries, surnameKey } from '../lib/data.js';
   import { normalizeTitle } from '../lib/sources.js';
   import { href } from '../lib/router.svelte.js';
 
@@ -80,6 +80,12 @@
     getPageCounts(all).then((m) => (pageCounts = m));
   });
 
+  // Numbered series, so a series stays together when sorting by author.
+  let seriesOf = $state(new Map());
+  $effect(() => {
+    getShelfSeries(all).then((m) => (seriesOf = m));
+  });
+
   // Filter by author name (ignoring case and punctuation), with the authors
   // in the current tab suggested as you type.
   let authorQuery = $state('');
@@ -115,19 +121,50 @@
       .filter(TESTS[filter] ?? TESTS.all)
       .filter((b) => !authorNeedle || normalizeTitle(authorOf(b)).includes(authorNeedle));
     if (sort === 'title') return [...list].sort((a, b) => a.title.localeCompare(b.title));
-    if (sort === 'author') {
-      // Surname A–Z, then each author's books in publication order.
-      return [...list].sort(
-        (a, b) =>
-          surnameKey(authorOf(a) || a.authorSlug).localeCompare(surnameKey(authorOf(b) || b.authorSlug)) ||
-          (a.year ?? 9999) - (b.year ?? 9999) ||
-          a.title.localeCompare(b.title),
-      );
-    }
+    if (sort === 'author') return byAuthor(list);
     const date = (b) => (tab === 'read' ? b.readAt : b.ownedAt);
     return [...list].sort((a, b) => date(b).localeCompare(date(a)));
   });
 
+  // Surname A–Z, then each author's books in publication order, except that
+  // once a series starts, the rest of it that's on this list follows in
+  // series order before the next book. So for Sanderson: The Final Empire,
+  // then the rest of Mistborn, then The Way of Kings and the rest of
+  // Stormlight, then Steelheart and the Reckoners.
+  function byAuthor(list) {
+    const year = (b) => b.year ?? 9999;
+    const inOrder = (a, b) => year(a) - year(b) || a.title.localeCompare(b.title);
+    const groups = new Map();
+    for (const b of list) {
+      const ref = authorOf(b) || b.authorSlug;
+      if (!groups.has(ref)) groups.set(ref, []);
+      groups.get(ref).push(b);
+    }
+    return [...groups]
+      .sort(([a], [b]) => surnameKey(a).localeCompare(surnameKey(b)))
+      .flatMap(([, books]) => {
+        const series = new Map();
+        for (const b of books) {
+          const s = seriesOf.get(b.id);
+          if (!s) continue;
+          if (!series.has(s.name)) series.set(s.name, []);
+          series.get(s.name).push(b);
+        }
+        for (const members of series.values())
+          members.sort((a, b) => seriesOf.get(a.id).position - seriesOf.get(b.id).position || inOrder(a, b));
+        const placed = new Set();
+        const out = [];
+        for (const b of [...books].sort(inOrder)) {
+          if (placed.has(b.id)) continue;
+          const s = seriesOf.get(b.id);
+          for (const x of s ? series.get(s.name) : [b]) {
+            placed.add(x.id);
+            out.push(x);
+          }
+        }
+        return out;
+      });
+  }
 </script>
 
 <h1>Library</h1>

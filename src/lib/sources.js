@@ -36,36 +36,90 @@ export const normalizeTitle = (s) =>
 export const slugify = (s) =>
   s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-// Search
+// Search. Open Library first; when it can't be reached, Wikidata, which
+// records Open Library's ids for authors and books, so its results lead to
+// the same author and book pages. Both return { source, authors | books }.
+
+const WD_API = 'https://www.wikidata.org/w/api.php';
+
+async function wikidataEntities(ids) {
+  if (!ids.length) return [];
+  const params = new URLSearchParams({ action: 'wbgetentities', ids: ids.join('|'), props: 'labels|descriptions|claims', languages: 'en', format: 'json', origin: '*' });
+  const { entities } = await getJson(`${WD_API}?${params}`);
+  return ids.map((id) => entities[id]).filter((e) => e && !e.missing);
+}
+
+// Wikidata items matching `q` that have the given statements, e.g. "P648" (an Open Library id).
+async function wikidataSearch(q, statements, limit) {
+  const srsearch = [q, ...statements.map((st) => `haswbstatement:${st}`)].join(' ');
+  const params = new URLSearchParams({ action: 'query', list: 'search', srsearch, srlimit: String(limit), format: 'json', origin: '*' });
+  const { query } = await getJson(`${WD_API}?${params}`);
+  return wikidataEntities(query.search.map((r) => r.title));
+}
+
+const claims = (e, property) => (e.claims?.[property] ?? []).map((c) => c.mainsnak?.datavalue?.value).filter((v) => v != null);
+const labelOf = (e) => e?.labels?.en?.value ?? null;
+const yearOf = (e, property) => Number(claims(e, property)[0]?.time?.match(/^[+-](\d{4})/)?.[1]) || null;
 
 export async function searchAuthors(q, limit = 10) {
-  const url = `${OL}/search/authors.json?q=${encodeURIComponent(q)}&limit=${limit}`;
-  const { docs } = await getJson(url);
-  return docs
-    .filter((d) => d.work_count > 0)
-    .map((d) => ({
-      olKey: d.key,
-      name: d.name,
-      topWork: d.top_work ?? null,
-      workCount: d.work_count,
-      birthDate: d.birth_date ?? null,
-    }));
+  try {
+    const { docs } = await getJson(`${OL}/search/authors.json?q=${encodeURIComponent(q)}&limit=${limit}`);
+    const authors = docs
+      .filter((d) => d.work_count > 0)
+      .map((d) => ({
+        olKey: d.key,
+        name: d.name,
+        topWork: d.top_work ?? null,
+        workCount: d.work_count,
+        birthDate: d.birth_date ?? null,
+      }));
+    return { source: 'Open Library', authors };
+  } catch (error) {
+    const people = await wikidataSearch(q, ['P648', 'P31=Q5'], limit).catch(() => Promise.reject(error));
+    const authors = people
+      .map((e) => ({
+        olKey: claims(e, 'P648').find(isOlAuthorKey),
+        name: labelOf(e),
+        description: e.descriptions?.en?.value ?? null, // "British novelist"
+        birthDate: yearOf(e, 'P569')?.toString() ?? null,
+      }))
+      .filter((a) => a.olKey && a.name);
+    return { source: 'Wikidata', authors };
+  }
 }
 
 export async function searchBooks(q, limit = 12) {
-  const fields = 'key,title,author_name,author_key,cover_i,first_publish_year';
-  const url = `${OL}/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=${limit}`;
-  const { docs } = await getJson(url);
-  return docs
-    .filter((d) => d.author_key?.length)
-    .map((d) => ({
-      id: d.key.replace('/works/', ''),
-      title: d.title,
-      year: d.first_publish_year ?? null,
-      coverId: d.cover_i ?? null,
-      authorName: d.author_name[0],
-      authorKey: d.author_key[0],
-    }));
+  try {
+    const fields = 'key,title,author_name,author_key,cover_i,first_publish_year';
+    const { docs } = await getJson(`${OL}/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=${limit}`);
+    const books = docs
+      .filter((d) => d.author_key?.length)
+      .map((d) => ({
+        id: d.key.replace('/works/', ''),
+        title: d.title,
+        year: d.first_publish_year ?? null,
+        coverId: d.cover_i ?? null,
+        authorName: d.author_name[0],
+        authorKey: d.author_key[0],
+      }));
+    return { source: 'Open Library', books };
+  } catch (error) {
+    // Written works with an Open Library id, then their authors' Open Library ids.
+    const works = await wikidataSearch(q, ['P648', 'P50'], limit).catch(() => Promise.reject(error));
+    const authorIds = [...new Set(works.map((e) => claims(e, 'P50')[0]?.id).filter(Boolean))];
+    const authors = new Map((await wikidataEntities(authorIds).catch(() => [])).map((e) => [e.id, e]));
+    const books = works
+      .map((e) => {
+        const author = authors.get(claims(e, 'P50')[0]?.id);
+        const id = claims(e, 'P648').find((k) => /^OL\d+W$/.test(k));
+        const authorKey = author && claims(author, 'P648').find(isOlAuthorKey);
+        return id && authorKey && labelOf(e)
+          ? { id, title: labelOf(e), year: yearOf(e, 'P577'), coverId: null, authorName: labelOf(author), authorKey }
+          : null;
+      })
+      .filter(Boolean);
+    return { source: 'Wikidata', books };
+  }
 }
 
 // A single work, for books that aren't in their author's (filtered) list.
@@ -145,10 +199,10 @@ function guessBooksFromOpenLibrary(olKey, docs, wikidata) {
   return books;
 }
 
-// Series, publication year and type for an author's works, keyed by Open Library work id.
+// Title, series, publication year and type for an author's works, keyed by Open Library work id.
 export async function fetchWikidataWorks(olKey) {
   const query = `
-    SELECT ?work ?olw ?seriesLabel ?ord ?pub ?typeLabel WHERE {
+    SELECT ?work ?workLabel ?olw ?seriesLabel ?ord ?pub ?typeLabel WHERE {
       ?author wdt:P648 "${olKey}" .
       ?work wdt:P50 ?author ; wdt:P648 ?olw .
       OPTIONAL { ?work p:P179 ?st . ?st ps:P179 ?series . OPTIONAL { ?st pq:P1545 ?ord } }
@@ -162,7 +216,7 @@ export async function fetchWikidataWorks(olKey) {
   const works = new Map();
   for (const row of results.bindings) {
     const id = row.olw.value;
-    const w = works.get(id) ?? { series: new Map(), year: null, types: new Set() };
+    const w = works.get(id) ?? { series: new Map(), year: null, types: new Set(), title: row.workLabel?.value ?? null };
     works.set(id, w);
     if (row.seriesLabel) {
       const position = row.ord ? parseFloat(row.ord.value) : NaN;
@@ -291,7 +345,7 @@ function booksFromWikipedia(olKey, wikiBooks, docs, wikidata) {
 
 // When Open Library can't be reached, a best guess at the real books from
 // Hardcover's list instead: books people have actually shelved, one per title.
-function guessBooksFromHardcover(olKey, hcBooks) {
+function guessBooksFromHardcover(olKey, hcBooks, wdDocs) {
   const thisYear = new Date().getFullYear();
   const byTitle = new Map();
   for (const b of hcBooks) {
@@ -299,7 +353,16 @@ function guessBooksFromHardcover(olKey, hcBooks) {
     const key = normalizeTitle(b.title.replace(/[:.(].*$/, ''));
     if (!byTitle.has(key) || b.readers > byTitle.get(key).readers) byTitle.set(key, b);
   }
-  return [...byTitle.values()].map((b) => ({ id: `${olKey}-${normalizeTitle(b.title)}`, olWorkId: null, title: b.title, year: b.year, coverId: null, readers: 0 }));
+  const seen = new Set();
+  const books = [];
+  for (const b of byTitle.values()) {
+    const workId = matchWork(b.title, wdDocs)?.key.replace('/works/', '') ?? null;
+    const id = workId ?? `${olKey}-${normalizeTitle(b.title)}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    books.push({ id, olWorkId: workId, title: b.title, year: b.year, coverId: null, readers: 0 });
+  }
+  return books;
 }
 
 // Fills what a book is missing from its Hardcover entry: length, series,
@@ -356,10 +419,15 @@ export async function buildAuthor(olKey) {
   // A main article with only a handful of italicised titles isn't a bibliography.
   const useWikipedia = wiki && !wiki.error && wiki.books.length >= 8;
   if (!authorName || (olDown && !useWikipedia && !hcBooks?.length)) throw new Error("Open Library can't be reached");
+  // Without Open Library's list of works, Wikidata's (which have Open Library
+  // ids and titles) give most books their usual id and cover.
+  const wdDocs = [...wikidata]
+    .filter(([, w]) => w.title)
+    .map(([id, w]) => ({ key: `/works/${id}`, title: w.title, first_publish_year: w.year, edition_count: 0 }));
   const books = useWikipedia
-    ? booksFromWikipedia(olKey, wiki.books, docs ?? [], wikidata)
+    ? booksFromWikipedia(olKey, wiki.books, docs ?? wdDocs, wikidata)
     : olDown
-      ? guessBooksFromHardcover(olKey, hcBooks)
+      ? guessBooksFromHardcover(olKey, hcBooks, wdDocs)
       : guessBooksFromOpenLibrary(olKey, docs, wikidata);
   if (hcBooks) addHardcover(books, hcBooks);
   books.sort((a, b) => a.year - b.year || a.title.localeCompare(b.title));

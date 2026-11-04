@@ -69,8 +69,8 @@
     <p class="notice warn">
       Open Library can't be reached right now, so this list was put together from
       {author.source.name === 'Wikipedia' ? 'Wikipedia and Hardcover' : 'Hardcover'}, with Hardcover's covers.
-      It isn't saved: once Open Library is back, the full list replaces it. Books you mark as read in the meantime may
-      need marking again.
+      It isn't saved: once Open Library is back, the full list replaces it. A few books you mark as read in the meantime
+      may need marking again.
     </p>
   {:else if author.live && author.source?.name === 'Wikipedia'}
     <p class="notice">

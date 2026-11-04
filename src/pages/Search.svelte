@@ -59,11 +59,15 @@
   {/if}
 
   <section>
-    <h2>Authors on Open Library</h2>
     {#await remoteAuthors}
+      <h2>More authors</h2>
       <p class="muted">Searching…</p>
-    {:then results}
-      {@const fresh = results.filter((a) => !local.knownKeys.has(a.olKey))}
+    {:then { source, authors }}
+      {@const fresh = authors.filter((a) => !local.knownKeys.has(a.olKey))}
+      <h2>Authors on {source}</h2>
+      {#if source !== 'Open Library'}
+        <p class="muted note">Open Library can't be reached right now, so these results come from Wikidata.</p>
+      {/if}
       {#if fresh.length}
         <ul class="authors">
           {#each fresh as a (a.olKey)}
@@ -71,7 +75,7 @@
               <a href={href('author', a.olKey)}>
                 <strong>{a.name}</strong>
                 <span class="muted">
-                  {#if a.birthDate}b. {a.birthDate} · {/if}{a.workCount} works{#if a.topWork} · best known for <em>{a.topWork}</em>{/if}
+                  {[a.birthDate && `b. ${a.birthDate}`, a.description, a.workCount && `${a.workCount} works`].filter(Boolean).join(' · ')}{#if a.topWork} · best known for <em>{a.topWork}</em>{/if}
                 </span>
               </a>
             </li>
@@ -81,24 +85,27 @@
         <p class="muted">No other authors found.</p>
       {/if}
     {:catch}
-      <p class="muted">Couldn't reach Open Library. Try again in a moment.</p>
+      <h2>More authors</h2>
+      <p class="muted">Couldn't reach Open Library or Wikidata. Try again in a moment.</p>
     {/await}
   </section>
 
   <section>
-    <h2>Books on Open Library</h2>
     {#await remoteBooks}
+      <h2>More books</h2>
       <p class="muted">Searching…</p>
-    {:then results}
+    {:then { source, books }}
       {@const localIds = new Set(local.books.map((b) => b.id))}
-      {@const fresh = results.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, olWorkId: b.id, authorRef: b.authorKey }))}
+      {@const fresh = books.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, olWorkId: b.id, authorRef: b.authorKey }))}
+      <h2>Books on {source}</h2>
       {#if fresh.length}
         {@render bookList(fresh)}
       {:else}
         <p class="muted">No other books found.</p>
       {/if}
     {:catch}
-      <p class="muted">Couldn't reach Open Library. Try again in a moment.</p>
+      <h2>More books</h2>
+      <p class="muted">Couldn't reach Open Library or Wikidata. Try again in a moment.</p>
     {/await}
   </section>
 {/await}
@@ -154,6 +161,8 @@
   .title { font-weight: 600; }
 
   .read { color: var(--accent); }
+
+  .note { margin: -4px 0 8px; font-size: 0.85rem; }
 
   .books .muted { font-size: 0.85rem; }
 </style>

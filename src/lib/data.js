@@ -206,20 +206,22 @@ export async function getPageCounts(books) {
   return pages;
 }
 
-// The numbered series each book is in, for keeping series together on the
-// shelf: bookId -> { name, position }. Series without numbers (Sanderson's
+// What the shelf sort needs from each book's current entry in its author's
+// list: bookId -> { year, series }. The year here beats the one saved when
+// the book was logged, which can be an edition's date. series is the
+// numbered series it's in, or null; series without numbers (Sanderson's
 // "Cosmere", which spans unrelated standalones) don't count.
-export async function getShelfSeries(books) {
+export async function getShelfInfo(books) {
   const refs = [...new Set(books.map((b) => b.authorSlug))];
   const authors = await Promise.allSettled(refs.map((ref) => getAuthor(ref)));
   const byRef = new Map(refs.map((ref, i) => [ref, authors[i].status === 'fulfilled' ? authors[i].value : null]));
   const found = new Map();
   for (const b of books) {
     const author = byRef.get(b.authorSlug);
-    if (!author) continue;
-    const book = author.books.find((x) => x.id === b.id) ?? byTitle(author, b.id);
-    const s = book?.series?.find((x) => Number.isFinite(x.position));
-    if (s) found.set(b.id, { name: s.name, position: s.position });
+    const book = author && (author.books.find((x) => x.id === b.id) ?? byTitle(author, b.id));
+    if (!book) continue;
+    const s = book.series?.find((x) => Number.isFinite(x.position));
+    found.set(b.id, { year: book.year ?? null, series: s ? { name: s.name, position: s.position } : null });
   }
   return found;
 }

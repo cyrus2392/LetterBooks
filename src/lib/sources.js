@@ -88,9 +88,12 @@ const wikidataAuthor = (e) => ({
 });
 
 // The Wikidata author (with an Open Library id) for a name, if there is one.
+// Only a name to go on, so it has to be someone described as a writer (not
+// the ragtime composer who shares a crime novelist's name).
+const WRITER = /writer|novelist|author|poet|journalist|playwright|essayist|historian|biographer|screenwriter|illustrator|comedian|presenter|broadcaster/i;
 const wikidataAuthorNamed = (name) =>
-  wikidataSearch(name, ['P648', 'P31=Q5'], 3)
-    .then((people) => people.map(wikidataAuthor).find((a) => a.olKey && sameName(a.name, name)) ?? null)
+  wikidataSearch(name, ['P648', 'P31=Q5'], 5)
+    .then((people) => people.map(wikidataAuthor).find((a) => a.olKey && sameName(a.name, name) && WRITER.test(a.description ?? '')) ?? null)
     .catch(() => null);
 
 export async function searchAuthors(q, limit = 10) {

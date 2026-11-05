@@ -1,11 +1,13 @@
 <script>
   import { bookCoverUrl, directCoverUrl } from '../lib/data.js';
-  import { lentTo, chosenCover } from '../lib/store.svelte.js';
+  import { lentTo, borrowedFrom, chosenCover } from '../lib/store.svelte.js';
 
   let { book, size = 'M' } = $props();
 
   // Books you've lent out get a "Lent out" band and a dimmed cover, wherever they appear.
   const loan = $derived(book.id ? lentTo(book.id) : null);
+  // Borrowed books get a "Borrowed" band at the foot, but stay bright: they're on your shelf.
+  const borrowed = $derived(book.id && !loan ? borrowedFrom(book.id) : null);
 
   // Covers come from the covers Worker. If it can't be reached, the same
   // cover (or the default one) comes straight from Open Library instead, and
@@ -30,6 +32,11 @@
     <div class="band" class:compact={size === 'S'} title="Lent to {loan.to}">
       <span class="tag">Lent out</span>
       {#if size !== 'S'}<span class="to">to {loan.to}</span>{/if}
+    </div>
+  {:else if borrowed}
+    <div class="band borrowed" class:compact={size === 'S'} title="Borrowed from {borrowed.from}">
+      <span class="tag">Borrowed</span>
+      {#if size !== 'S'}<span class="to">from {borrowed.from}</span>{/if}
     </div>
   {/if}
 </div>
@@ -90,6 +97,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .band.borrowed {
+    top: auto;
+    bottom: 0;
+    translate: none;
+    border-radius: 0 0 4px 4px;
+    background: var(--borrowed);
+    color: var(--borrowed-ink);
   }
 
   .band.compact { padding: 2px 0; }

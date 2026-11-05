@@ -9,6 +9,8 @@
 //     owned: true?, ownedAt,             on your physical shelf; independent of reading
 //     lent: { to, on }?                  currently lent out (owned books only)
 //     loans: [{ to, lentOn, returnedOn }]   past loans, oldest first
+//     borrowed: { from, on }?            borrowed from someone and on your shelf (books you don't own)
+//     borrows: [{ from, borrowedOn, returnedOn }]   past borrowings, oldest first
 //     shelf: 'reading' | 'tbr' | null, shelvedOn,
 //     reads: [{ id, startedOn, finishedOn, rating, review, loggedAt }]
 //   }
@@ -79,7 +81,7 @@ function entry(book, authorSlug) {
 // Drop entries with nothing left in them so they don't count anywhere.
 function prune(bookId) {
   const e = data.books[bookId];
-  if (e && !e.quickRead && !e.owned && !e.shelf && e.reads.length === 0) delete data.books[bookId];
+  if (e && !e.quickRead && !e.owned && !e.borrowed && !e.borrows?.length && !e.shelf && e.reads.length === 0) delete data.books[bookId];
 }
 
 const hasRead = (e) => !!e && (e.quickRead || e.reads.length > 0);
@@ -99,7 +101,7 @@ export const totalOwned = () => Object.values(data.books).filter((e) => e.owned)
 // with when you last read it and when you got it.
 export function library() {
   return Object.entries(data.books)
-    .filter(([, e]) => hasRead(e) || e.owned)
+    .filter(([, e]) => hasRead(e) || e.owned || e.borrowed)
     .map(([id, e]) => {
       const reads = readsOf(id);
       return {
@@ -114,10 +116,13 @@ export function library() {
         read: hasRead(e),
         owned: !!e.owned,
         lent: e.lent ?? null,
+        borrowed: e.borrowed ?? null,
         // Finish date of the latest logged read, else when it was ticked (full
         // timestamp, so books ticked the same day still sort).
         readAt: reads[0]?.finishedOn ?? e.quickReadAt ?? '',
-        ownedAt: e.ownedAt ?? '', // full timestamp, so books added the same day still sort
+        // When it came onto your shelf: bought (full timestamp, so books added
+        // the same day still sort) or borrowed.
+        ownedAt: e.ownedAt ?? e.borrowed?.on ?? '',
       };
     });
 }
@@ -189,6 +194,8 @@ export function setRead(book, authorSlug, read) {
 export function setOwned(book, authorSlug, owned) {
   const e = entry(book, authorSlug);
   if (owned) {
+    // Bought your own copy of a borrowed book: the borrowed one has gone back.
+    if (e.borrowed) giveBack(book.id);
     e.owned = true;
     e.ownedAt = new Date().toISOString();
   } else {
@@ -237,6 +244,41 @@ export function markReturned(bookId, returnedOn = today()) {
   e.loans ??= [];
   e.loans.push({ to: e.lent.to, lentOn: e.lent.on, returnedOn });
   delete e.lent;
+  save();
+}
+
+// Borrowing (books you don't own, while they're on your shelf)
+
+export const borrowedFrom = (bookId) => data.books[bookId]?.borrowed ?? null;
+
+// Past borrowings, most recent first.
+export const borrowsOf = (bookId) => [...(data.books[bookId]?.borrows ?? [])].reverse();
+
+// Everyone you've borrowed from or lent to, most recent first, for suggesting names.
+export function lenders() {
+  const all = Object.values(data.books).flatMap((e) => [
+    ...(e.borrowed ? [{ name: e.borrowed.from, on: e.borrowed.on }] : []),
+    ...(e.borrows ?? []).map((b) => ({ name: b.from, on: b.borrowedOn })),
+  ]);
+  all.sort((a, b) => b.on.localeCompare(a.on));
+  return [...new Set([...all.map((b) => b.name), ...borrowers()])];
+}
+
+// Borrow a book, or change who/when for the current borrowing.
+export function borrow(book, authorSlug, from, on) {
+  const e = entry(book, authorSlug);
+  if (e.owned) return;
+  e.borrowed = { from: from.trim(), on };
+  save();
+}
+
+// You've given it back: move the borrowing into its history.
+export function giveBack(bookId, returnedOn = today()) {
+  const e = data.books[bookId];
+  if (!e?.borrowed) return;
+  e.borrows ??= []; // assign first, then push (see markReturned)
+  e.borrows.push({ from: e.borrowed.from, borrowedOn: e.borrowed.on, returnedOn });
+  delete e.borrowed;
   save();
 }
 

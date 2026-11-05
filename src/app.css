@@ -8,6 +8,8 @@
   --accent-ink: #04170d;
   --owned: #f0b429;
   --owned-ink: #2a1d00;
+  --borrowed: #7cb4ff;
+  --borrowed-ink: #06182f;
   --border: #2f3943;
   --radius: 6px;
   color-scheme: dark;
@@ -24,6 +26,8 @@
     --accent-ink: #ffffff;
     --owned: #b7791f;
     --owned-ink: #ffffff;
+    --borrowed: #2f6fd6;
+    --borrowed-ink: #ffffff;
     --border: #dcd6ca;
     color-scheme: light;
   }

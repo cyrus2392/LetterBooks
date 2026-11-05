@@ -1,9 +1,14 @@
 <script>
-  // Modal form for lending an owned book to someone, or editing the current loan.
+  // Modal form for lending an owned book to someone, or (mode 'borrow')
+  // recording a book you've borrowed from someone; or editing either.
   import { untrack } from 'svelte';
-  import { lend, lentTo, borrowers, today } from '../lib/store.svelte.js';
+  import { lend, lentTo, borrowers, borrow, borrowedFrom, lenders, today } from '../lib/store.svelte.js';
 
-  let { book, onclose } = $props();
+  let { book, authorSlug = null, mode = 'lend', onclose } = $props();
+  const borrowing = untrack(() => mode === 'borrow');
+  const words = borrowing
+    ? { add: 'Borrowed a copy', edit: 'Edit borrowing', who: 'Borrowed from', when: 'Borrowed on', save: 'Add to shelf' }
+    : { add: 'Lend this book', edit: 'Edit loan', who: 'Lent to', when: 'Lent on', save: 'Lend' };
 
   let dialog;
   // Close and tell the page directly. Some browsers don't reliably fire the
@@ -17,10 +22,10 @@
     onclose();
   }
   // The form starts from the loan as it was when the dialog opened.
-  const current = untrack(() => lentTo(book.id));
-  let to = $state(current?.to ?? '');
+  const current = untrack(() => (borrowing ? borrowedFrom(book.id) : lentTo(book.id)));
+  let to = $state((borrowing ? current?.from : current?.to) ?? '');
   let on = $state(current?.on ?? today());
-  const names = borrowers();
+  const names = borrowing ? lenders() : borrowers();
 
   $effect(() => {
     dialog.showModal();
@@ -29,18 +34,19 @@
   function submit(event) {
     event.preventDefault();
     if (!to.trim()) return;
-    lend(book.id, to, on || today());
+    if (borrowing) borrow(book, authorSlug, to, on || today());
+    else lend(book.id, to, on || today());
     close();
   }
 </script>
 
 <dialog bind:this={dialog} onclose={close} oncancel={close} aria-labelledby="lend-title">
   <form onsubmit={submit}>
-    <h2 id="lend-title">{current ? 'Edit loan' : 'Lend this book'}</h2>
+    <h2 id="lend-title">{current ? words.edit : words.add}</h2>
     <p class="muted book">{book.title}</p>
 
     <label>
-      Lent to
+      {words.who}
       <!-- svelte-ignore a11y_autofocus -->
       <input bind:value={to} list="borrowers" required autofocus placeholder="Name" autocomplete="off" />
       <datalist id="borrowers">
@@ -49,13 +55,13 @@
     </label>
 
     <label>
-      Lent on
+      {words.when}
       <input type="date" bind:value={on} max={today()} />
     </label>
 
     <div class="actions">
       <button type="button" class="btn" onclick={() => close()}>Cancel</button>
-      <button type="submit" class="btn primary">{current ? 'Save' : 'Lend'}</button>
+      <button type="submit" class="btn primary">{current ? 'Save' : words.save}</button>
     </div>
   </form>
 </dialog>

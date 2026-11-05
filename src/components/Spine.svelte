@@ -3,7 +3,7 @@
   // book round on its edge to show the front cover.
   import Cover from './Cover.svelte';
   import Icon from './Icon.svelte';
-  import { faCheck } from '@fortawesome/free-solid-svg-icons';
+  import { faCheck, faHandHoldingHand } from '@fortawesome/free-solid-svg-icons';
   import { href } from '../lib/router.svelte.js';
   import { bookCoverUrl } from '../lib/data.js';
   import { chosenCover } from '../lib/store.svelte.js';
@@ -66,8 +66,9 @@
 <a
   class="book"
   class:lent={book.lent}
+  class:borrowed={book.borrowed}
   href={href('book', book.authorSlug, book.id)}
-  aria-label="{book.title}{authorName ? ` by ${authorName}` : ''}{book.lent ? `, lent to ${book.lent.to}` : ''}"
+  aria-label="{book.title}{authorName ? ` by ${authorName}` : ''}{book.lent ? `, lent to ${book.lent.to}` : ''}{book.borrowed ? `, borrowed from ${book.borrowed.from}` : ''}"
   style:--d="{width}px"
   style:--h="{height}px"
   style:--fill={fill}
@@ -85,6 +86,9 @@
         <span class="tag">Lent</span>
       {:else if surname}
         <span class="author">{surname}</span>
+      {/if}
+      {#if book.borrowed}
+        <span class="sticker" title="Borrowed from {book.borrowed.from}"><Icon icon={faHandHoldingHand} /></span>
       {/if}
     </div>
     <div class="front" aria-hidden="true">
@@ -224,6 +228,25 @@
   }
 
   .lent .spine::before, .lent .spine::after { display: none; }
+
+  /* A borrowed book is on the shelf as normal, with a library-style sticker
+     at the foot of its spine. */
+  .borrowed .spine { padding-bottom: 4px; box-shadow: inset 0 0 0 2px var(--borrowed), 0 1px 2px rgb(0 0 0 / 0.4); }
+
+  .borrowed .spine::after { display: none; }
+
+  .sticker {
+    flex: none;
+    width: calc(100% - 6px);
+    max-width: 22px;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 3px;
+    background: var(--borrowed);
+    color: var(--borrowed-ink);
+    font-size: 10px;
+  }
 
   .tag {
     flex: none;

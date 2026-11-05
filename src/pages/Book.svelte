@@ -5,9 +5,9 @@
   import LendDialog from '../components/LendDialog.svelte';
   import CoverPicker from '../components/CoverPicker.svelte';
   import Icon from '../components/Icon.svelte';
-  import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faRotateLeft, faImage, faStar } from '@fortawesome/free-solid-svg-icons';
+  import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faHandHoldingHand, faRotateLeft, faImage, faStar } from '@fortawesome/free-solid-svg-icons';
   import { getBook, getBookDetails, TYPE_LABELS } from '../lib/data.js';
-  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, chosenCover } from '../lib/store.svelte.js';
+  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, borrowedFrom, borrowsOf, giveBack, chosenCover } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
   import { formatDate, formatRelease } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
@@ -21,7 +21,7 @@
 
   // null when closed; { editing: read | null } when the log dialog is open.
   let logging = $state(null);
-  let lending = $state(false);
+  let lending = $state(null); // null, 'lend' or 'borrow' while the dialog is open
   let pickingCover = $state(false);
 </script>
 
@@ -116,9 +116,20 @@
           {#if loan}
             <Icon icon={faHandHolding} /> Lent to <strong>{loan.to}</strong> since {formatDate(loan.on)}
             <button class="btn small" onclick={() => markReturned(book.id)}><Icon icon={faRotateLeft} /> Mark as returned</button>
-            <button class="link" onclick={() => (lending = true)}>Edit</button>
+            <button class="link" onclick={() => (lending = 'lend')}>Edit</button>
           {:else}
-            <button class="btn small" onclick={() => (lending = true)}><Icon icon={faHandHolding} /> Lend this book</button>
+            <button class="btn small" onclick={() => (lending = 'lend')}><Icon icon={faHandHolding} /> Lend this book</button>
+          {/if}
+        </p>
+      {:else}
+        {@const borrowed = borrowedFrom(book.id)}
+        <p class="status lending">
+          {#if borrowed}
+            <span class="borrowed"><Icon icon={faHandHoldingHand} /> Borrowed from <strong>{borrowed.from}</strong></span> since {formatDate(borrowed.on)}
+            <button class="btn small" onclick={() => giveBack(book.id)}><Icon icon={faRotateLeft} /> Given back</button>
+            <button class="link" onclick={() => (lending = 'borrow')}>Edit</button>
+          {:else}
+            <button class="btn small" onclick={() => (lending = 'borrow')}><Icon icon={faHandHoldingHand} /> Borrowed a copy</button>
           {/if}
         </p>
       {/if}
@@ -196,6 +207,20 @@
         </section>
       {/if}
 
+      {#if borrowsOf(book.id).length}
+        <section class="reads">
+          <h2>Borrowing history</h2>
+          <ol>
+            {#each borrowsOf(book.id) as b, i (i)}
+              <li class="loan">
+                <strong>{b.from}</strong>
+                <span class="muted">{formatDate(b.borrowedOn)} – {formatDate(b.returnedOn)}</span>
+              </li>
+            {/each}
+          </ol>
+        </section>
+      {/if}
+
       {#if book.olWorkId || book.hardcover}
         <p class="source muted">
           {#if book.olWorkId}<a href="https://openlibrary.org/works/{book.olWorkId}" target="_blank" rel="noopener">View on Open Library</a>{/if}
@@ -211,7 +236,7 @@
   {/if}
 
   {#if lending}
-    <LendDialog {book} onclose={() => (lending = false)} />
+    <LendDialog {book} authorSlug={author.slug} mode={lending} onclose={() => (lending = null)} />
   {/if}
 
   {#if logging}
@@ -277,6 +302,10 @@
   .status { margin: 6px 0; display: flex; align-items: center; gap: 8px; }
 
   .lending { flex-wrap: wrap; margin-bottom: 12px; }
+
+  .borrowed { display: inline-flex; align-items: center; gap: 8px; color: var(--borrowed); }
+
+  .borrowed strong { color: var(--text); }
 
   .btn.small { padding: 4px 10px; font-size: 0.85rem; }
 

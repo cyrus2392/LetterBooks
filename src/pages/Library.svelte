@@ -63,7 +63,10 @@
   const shelfHeight = $derived(narrow ? 150 : 200);
 
   const all = $derived(library());
-  const owned = $derived(all.filter((b) => b.owned));
+  const ownedOnly = $derived(all.filter((b) => b.owned));
+  // The bookshelf is everything physically on it: books you own and books you've borrowed.
+  const owned = $derived(all.filter((b) => b.owned || b.borrowed));
+  const borrowedCount = $derived(owned.filter((b) => b.borrowed).length);
   const read = $derived(all.filter((b) => b.read));
 
   // Author names, looked up from the refs the library stores. Kept in state
@@ -101,6 +104,7 @@
       ['unread', 'Not read yet'],
       ['read', 'Read'],
       ['lent', 'Lent out'],
+      ['borrowed', 'Borrowed'],
     ],
     read: [
       ['all', 'All'],
@@ -113,6 +117,7 @@
     unread: (b) => !b.read,
     read: (b) => b.read,
     lent: (b) => !!b.lent,
+    borrowed: (b) => !!b.borrowed,
     owned: (b) => b.owned,
     notowned: (b) => !b.owned,
   };
@@ -171,7 +176,7 @@
 <h1>Library</h1>
 
 <p class="summary muted">
-  You own <strong>{owned.length}</strong> {owned.length === 1 ? 'book' : 'books'} and have read <strong>{read.length}</strong>.
+  You own <strong>{ownedOnly.length}</strong> {ownedOnly.length === 1 ? 'book' : 'books'}{#if borrowedCount}, have <strong>{borrowedCount}</strong> borrowed,{/if} and have read <strong>{read.length}</strong>.
   {#if owned.length}<strong>{owned.filter((b) => !b.read).length}</strong> on your shelf {owned.filter((b) => !b.read).length === 1 ? "isn't" : "aren't"} read yet.{/if}
   {#if owned.some((b) => b.lent)}<strong>{owned.filter((b) => b.lent).length}</strong> {owned.filter((b) => b.lent).length === 1 ? 'is' : 'are'} lent out.{/if}
 </p>

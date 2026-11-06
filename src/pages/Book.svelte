@@ -7,7 +7,7 @@
   import Icon from '../components/Icon.svelte';
   import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faHandHoldingHand, faRotateLeft, faImage, faStar } from '@fortawesome/free-solid-svg-icons';
   import { getBook, getBookDetails, TYPE_LABELS } from '../lib/data.js';
-  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, borrowedFrom, borrowsOf, giveBack, chosenCover } from '../lib/store.svelte.js';
+  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, formatOf, setFormat, FORMATS, borrowedFrom, borrowsOf, giveBack, chosenCover } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
   import { formatDate, formatRelease } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
@@ -111,6 +111,16 @@
       </div>
 
       {#if owned}
+        <fieldset class="format">
+          <legend>Edition</legend>
+          {#each Object.entries(FORMATS) as [value, label]}
+            <label>
+              <input type="radio" name="format" {value} checked={formatOf(book.id) === value} onchange={() => setFormat(book.id, value)} />
+              <span class="box" aria-hidden="true"><Icon icon={faCheck} /></span>
+              {label}
+            </label>
+          {/each}
+        </fieldset>
         {@const loan = lentTo(book.id)}
         <p class="status lending">
           {#if loan}
@@ -302,6 +312,30 @@
   .status { margin: 6px 0; display: flex; align-items: center; gap: 8px; }
 
   .lending { flex-wrap: wrap; margin-bottom: 12px; }
+
+  /* One edition at a time, shown as tick boxes. */
+  .format { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin: 4px 0 10px; padding: 0; border: 0; }
+
+  .format legend { float: left; margin-right: 4px; font-size: 0.9rem; color: var(--muted); }
+
+  .format label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 0.95rem; }
+
+  .format input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .format .box {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border: 1.5px solid var(--muted);
+    border-radius: 4px;
+    font-size: 11px;
+    color: transparent;
+  }
+
+  .format input:checked + .box { background: var(--owned); border-color: var(--owned); color: var(--owned-ink); }
+
+  .format input:focus-visible + .box { outline: 2px solid var(--text); outline-offset: 2px; }
 
   .borrowed { display: inline-flex; align-items: center; gap: 8px; color: var(--borrowed); }
 

@@ -229,13 +229,16 @@
 {#if shown.length && view === 'shelf'}
   <div class="shelves" style:--shelf="{shelfHeight}px">
     {#each shown as book (book.id)}
-      <div class="slot"><Spine {book} authorName={authorOf(book)} shelf={shelfHeight} pages={pageCounts.get(book.id)} /></div>
+      <!-- Own both editions? Both copies stand on the shelf. -->
+      {#each book.format === 'both' ? ['paperback', 'hardback'] : [book.format] as edition}
+        <div class="slot"><Spine {book} {edition} authorName={authorOf(book)} shelf={shelfHeight} pages={pageCounts.get(book.id)} /></div>
+      {/each}
     {/each}
   </div>
 {:else if shown.length}
   <div class="grid">
     {#each shown as book (book.id)}
-      <BookCard {book} authorSlug={book.authorSlug} authorName={authorOf(book)} />
+      <BookCard {book} authorSlug={book.authorSlug} authorName={authorOf(book)} format={book.format} />
     {/each}
   </div>
 {:else if authorNeedle}

@@ -11,12 +11,16 @@
 
   // `shelf` is the height of the shelf in px; books stand a little shorter.
   // `pages`, if known, sets how thick the spine is.
-  let { book, authorName = '', shelf = 200, pages = null } = $props();
+  // `edition` is 'paperback' or 'hardback' (books you only read or borrowed
+  // have none and look like paperbacks).
+  let { book, authorName = '', shelf = 200, pages = null, edition = null } = $props();
 
+  const hardback = $derived(edition === 'hardback');
   const shape = $derived(spineShape(book.id, pages));
-  const height = $derived(Math.round(shelf * shape.height));
+  // Hardbacks stand taller and their boards make them a little thicker.
+  const height = $derived(Math.round(shelf * shape.height * (hardback ? 1 : 0.9)));
   // Thinner spines on shorter (phone) shelves, so a row still holds plenty.
-  const width = $derived(Math.round((shape.width * shelf) / 200));
+  const width = $derived(Math.round(((shape.width + (hardback ? 6 : 0)) * shelf) / 200));
   const surname = $derived(authorName.split(/\s+/).filter((w) => !/^(jr|sr)\.?$/i.test(w)).at(-1) ?? '');
 
   // The cover and its colour load once the book is near the screen.
@@ -67,8 +71,10 @@
   class="book"
   class:lent={book.lent}
   class:borrowed={book.borrowed}
+  class:hardback
+  class:paperback={edition === 'paperback'}
   href={href('book', book.authorSlug, book.id)}
-  aria-label="{book.title}{authorName ? ` by ${authorName}` : ''}{book.lent ? `, lent to ${book.lent.to}` : ''}{book.borrowed ? `, borrowed from ${book.borrowed.from}` : ''}"
+  aria-label="{book.title}{authorName ? ` by ${authorName}` : ''}{book.lent ? `, lent to ${book.lent.to}` : ''}{edition ? `, ${edition}` : ''}{book.borrowed ? `, borrowed from ${book.borrowed.from}` : ''}"
   style:--d="{width}px"
   style:--h="{height}px"
   style:--fill={fill}
@@ -228,6 +234,32 @@
   }
 
   .lent .spine::before, .lent .spine::after { display: none; }
+
+  /* Paperbacks: a flat, soft spine with a crease down each side where the
+     cover folds, and no binding bands. */
+  .paperback:not(.lent) .spine {
+    border-radius: 1px;
+    background-image:
+      linear-gradient(to right, transparent 9%, rgb(0 0 0 / 0.22) 10%, transparent 12%, transparent 88%, rgb(0 0 0 / 0.22) 90%, transparent 91%),
+      linear-gradient(to right, rgb(0 0 0 / 0.18), rgb(255 255 255 / 0.05) 30%, rgb(0 0 0 / 0.05) 70%, rgb(0 0 0 / 0.2));
+  }
+
+  .paperback:not(.lent) .spine::before, .paperback:not(.lent) .spine::after { display: none; }
+
+  /* Hardbacks: boards that stand proud at the head and foot, a rounded,
+     glossier spine and gilt bands. (A lent book is just its gap, whatever the edition.) */
+  .hardback:not(.lent) .spine {
+    border-radius: 5px 5px 3px 3px;
+    border-top: 4px solid rgb(0 0 0 / 0.45);
+    border-bottom: 4px solid rgb(0 0 0 / 0.45);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 3px rgb(0 0 0 / 0.5);
+  }
+
+  .hardback:not(.lent) .spine::before, .hardback:not(.lent) .spine::after {
+    height: 3px;
+    background: #d9b45a;
+    opacity: 0.85;
+  }
 
   /* A borrowed book is on the shelf as normal, with a library-style sticker
      at the foot of its spine. */

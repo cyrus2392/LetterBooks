@@ -10,7 +10,9 @@
   // `editing` swaps them for a hide/restore button; `label` is shown above
   // the title (e.g. a series position); `authorName` is shown before the year,
   // for lists that mix authors.
-  let { book, authorSlug, editing = false, label = null, authorName = null } = $props();
+  // `format`, if given, is the edition you own, shown under the title.
+  let { book, authorSlug, editing = false, label = null, authorName = null, format = null } = $props();
+  const FORMAT_LABELS = { paperback: 'Paperback', hardback: 'Hardback', both: 'Both editions' };
   const read = $derived(isRead(book.id));
   const owned = $derived(isOwned(book.id));
   const current = $derived(shelfOf(book.id));
@@ -64,6 +66,7 @@
   {#if label}<div class="label">{label}</div>{/if}
   <a class="title" href={href('book', authorSlug, book.id)}>{book.title}</a>
   <div class="year muted">{#if authorName}<span class="author">{authorName}</span>{#if book.year}{' · '}{/if}{/if}{book.year ?? ''}</div>
+  {#if format}<div class="format {format}" title={format === 'both' ? 'A paperback and a hardback copy' : null}>{FORMAT_LABELS[format]}</div>{/if}
 </article>
 
 <style>
@@ -153,6 +156,21 @@
   }
 
   .title:hover { text-decoration: underline; }
+
+  .format {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .format.hardback, .format.both { border-color: var(--owned); color: var(--owned); }
 
   .year {
     font-size: 0.8rem;

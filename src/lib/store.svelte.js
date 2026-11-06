@@ -7,6 +7,7 @@
 //     title, year, authorSlug, coverId, coverRegion, image   snapshot for lists like the profile
 //     quickRead: true?, quickReadAt,     ticked as read without a log
 //     owned: true?, ownedAt,             on your physical shelf; independent of reading
+//     format: 'hardback' | 'both'?       the edition you own; paperback if not set
 //     lent: { to, on }?                  currently lent out (owned books only)
 //     loans: [{ to, lentOn, returnedOn }]   past loans, oldest first
 //     borrowed: { from, on }?            borrowed from someone and on your shelf (books you don't own)
@@ -117,6 +118,7 @@ export function library() {
         owned: !!e.owned,
         lent: e.lent ?? null,
         borrowed: e.borrowed ?? null,
+        format: e.owned ? (e.format ?? 'paperback') : null,
         // Finish date of the latest logged read, else when it was ticked (full
         // timestamp, so books ticked the same day still sort).
         readAt: reads[0]?.finishedOn ?? e.quickReadAt ?? '',
@@ -205,6 +207,19 @@ export function setOwned(book, authorSlug, owned) {
     delete e.lent;
   }
   prune(book.id);
+  save();
+}
+
+// Which edition you own: 'paperback' (the default), 'hardback', or 'both'
+// when you have a copy of each.
+export const FORMATS = { paperback: 'Paperback', hardback: 'Hardback', both: 'Both' };
+export const formatOf = (bookId) => (data.books[bookId]?.owned ? (data.books[bookId].format ?? 'paperback') : null);
+
+export function setFormat(bookId, format) {
+  const e = data.books[bookId];
+  if (!e?.owned || !(format in FORMATS)) return;
+  if (format === 'paperback') delete e.format;
+  else e.format = format;
   save();
 }
 

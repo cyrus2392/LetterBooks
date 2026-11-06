@@ -19,6 +19,7 @@
 //   hidden[bookId] = true                           not counted on author pages
 //   dismissed['book:<id>' | 'author:<key>'] = true  suggestions you're not interested in
 //   covers[bookId] = coverId                        a cover you picked instead of the automatic one
+//   shelfOrder = { owned: [bookId], read: [bookId] }   your own arrangement of each library tab
 // Dates are local 'YYYY-MM-DD' strings; ratings are 0.5–5 in half steps.
 
 const KEY = 'letterbooks:v1';
@@ -364,6 +365,17 @@ export function setDismissed(key, dismissed) {
 }
 
 // Covers you've chosen for books, overriding the automatic UK pick everywhere.
+
+// Your own order for a library tab ('owned' or 'read'), from dragging books
+// around the shelf. Books added since go after these.
+export const shelfOrder = (tab) => data.shelfOrder?.[tab] ?? [];
+
+export function setShelfOrder(tab, ids) {
+  data.shelfOrder ??= {};
+  if (ids.length) data.shelfOrder[tab] = ids;
+  else delete data.shelfOrder[tab];
+  save();
+}
 
 export const chosenCover = (bookId) => data.covers[bookId] ?? null;
 

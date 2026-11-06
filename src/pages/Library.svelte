@@ -5,7 +5,7 @@
   import Spine from '../components/Spine.svelte';
   import Icon from '../components/Icon.svelte';
   import { faBookOpen, faTableCells } from '@fortawesome/free-solid-svg-icons';
-  import { library } from '../lib/store.svelte.js';
+  import { library, shelfOrder, setShelfOrder } from '../lib/store.svelte.js';
   import { getAuthorNames, getPageCounts, getShelfInfo, surnameKey } from '../lib/data.js';
   import { normalizeTitle } from '../lib/sources.js';
   import { href } from '../lib/router.svelte.js';
@@ -20,7 +20,7 @@
   function savedSort() {
     try {
       const s = localStorage.getItem(SORT_KEY);
-      return ['recent', 'title', 'author'].includes(s) ? s : 'recent';
+      return ['recent', 'title', 'author', 'custom'].includes(s) ? s : 'recent';
     } catch {
       return 'recent';
     }
@@ -128,9 +128,97 @@
       .filter((b) => !authorNeedle || normalizeTitle(authorOf(b)).includes(authorNeedle));
     if (sort === 'title') return [...list].sort((a, b) => a.title.localeCompare(b.title));
     if (sort === 'author') return byAuthor(list);
+    if (sort === 'custom') return byCustom(list);
     const date = (b) => (tab === 'read' ? b.readAt : b.ownedAt);
     return [...list].sort((a, b) => date(b).localeCompare(date(a)));
   });
+
+  // Your own order, from dragging books around. Books it doesn't include yet
+  // (added since, or never moved) follow in author order.
+  const tabKey = $derived(tab === 'read' ? 'read' : 'owned');
+  function byCustom(list) {
+    const at = new Map(shelfOrder(tabKey).map((id, i) => [id, i]));
+    const placed = list.filter((b) => at.has(b.id)).sort((a, b) => at.get(a.id) - at.get(b.id));
+    return [...placed, ...byAuthor(list.filter((b) => !at.has(b.id)))];
+  }
+
+  // Put a book just before or after another, in the whole tab's order (so
+  // books hidden by a filter keep their places).
+  function moveBook(id, targetId, after) {
+    if (id === targetId) return;
+    const ids = byCustom(tab === 'read' ? read : owned).map((b) => b.id).filter((x) => x !== id);
+    const i = ids.indexOf(targetId);
+    if (i < 0) return;
+    ids.splice(after ? i + 1 : i, 0, id);
+    setShelfOrder(tabKey, ids);
+  }
+
+  // Dragging spines. A mouse drag starts once the pointer moves a little; on
+  // a touch screen, press and hold a book first, so swiping still scrolls.
+  const arranging = $derived(sort === 'custom' && view === 'shelf');
+  let drag = $state(null); // { id, x, y, dx, dy, active }
+  let drop = $state(null); // { id, after }
+  let holdTimer = null;
+
+  function grab(event, id) {
+    if (!arranging || event.button !== 0) return;
+    drag = { id, x: event.clientX, y: event.clientY, dx: 0, dy: 0, active: false, touch: event.pointerType !== 'mouse' };
+    if (drag.touch) holdTimer = setTimeout(() => drag && (drag.active = true), 350);
+    window.addEventListener('pointermove', follow);
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('touchmove', holdStill, { passive: false });
+  }
+
+  function follow(event) {
+    if (!drag) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.active) {
+      if (Math.hypot(dx, dy) < 6) return;
+      if (drag.touch) return cancel(); // moved before the hold: it's a scroll
+      drag.active = true;
+    }
+    drag.dx = dx;
+    drag.dy = dy;
+    const slot = document.elementsFromPoint(event.clientX, event.clientY).find((el) => el.matches?.('.slot[data-id]') && el.dataset.id !== drag.id);
+    if (!slot) return (drop = null);
+    const box = slot.getBoundingClientRect();
+    drop = { id: slot.dataset.id, after: event.clientX > box.left + box.width / 2 };
+  }
+
+  // While dragging on a touch screen, the page mustn't scroll.
+  function holdStill(event) {
+    if (drag?.active) event.preventDefault();
+  }
+
+  function release() {
+    const moved = drag?.active;
+    if (moved && drop) moveBook(drag.id, drop.id, drop.after);
+    cancel();
+    // The drag ends over a link; don't open the book.
+    if (moved) window.addEventListener('click', (e) => (e.preventDefault(), e.stopPropagation()), { capture: true, once: true });
+  }
+
+  function cancel() {
+    clearTimeout(holdTimer);
+    drag = null;
+    drop = null;
+    window.removeEventListener('pointermove', follow);
+    window.removeEventListener('pointerup', release);
+    window.removeEventListener('pointercancel', cancel);
+    window.removeEventListener('touchmove', holdStill);
+  }
+
+  // Keyboard: Alt + left/right arrow moves the focused book one place.
+  function nudge(event, id) {
+    if (!arranging || !event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    const i = shown.findIndex((b) => b.id === id);
+    const target = shown[i + (event.key === 'ArrowLeft' ? -1 : 1)];
+    if (target) moveBook(id, target.id, event.key === 'ArrowRight');
+    requestAnimationFrame(() => document.querySelector(`.slot[data-id="${CSS.escape(id)}"] a`)?.focus());
+  }
 
   // Surname A–Z, then each author's books in publication order, except that
   // once a series starts, the rest of it that's on this list follows in
@@ -222,16 +310,41 @@
       <option value="recent">{tab === 'read' ? 'Recently read' : 'Recently added'}</option>
       <option value="title">Title</option>
       <option value="author">Author</option>
+      <option value="custom">My order</option>
     </select>
   </label>
 </div>
 
+{#if sort === 'custom' && shown.length}
+  <p class="muted arrange">
+    {#if view === 'shelf'}
+      Drag books to arrange your shelf (on a phone, press and hold one first; with a keyboard, Alt and the arrow keys).
+    {:else}
+      Switch to the shelf view to arrange your books.
+    {/if}
+    {#if shelfOrder(tabKey).length}<button class="link" onclick={() => confirm('Put these books back in author order?') && setShelfOrder(tabKey, [])}>Reset to author order</button>{/if}
+  </p>
+{/if}
+
 {#if shown.length && view === 'shelf'}
-  <div class="shelves" style:--shelf="{shelfHeight}px">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="shelves" class:arranging class:dragging={drag?.active} style:--shelf="{shelfHeight}px" ondragstart={(e) => arranging && e.preventDefault()} oncontextmenu={(e) => drag && e.preventDefault()}>
     {#each shown as book (book.id)}
       <!-- Own both editions? Both copies stand on the shelf. -->
       {#each book.format === 'both' ? ['paperback', 'hardback'] : [book.format] as edition}
-        <div class="slot"><Spine {book} {edition} authorName={authorOf(book)} shelf={shelfHeight} pages={pageCounts.get(book.id)} /></div>
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="slot"
+          data-id={book.id}
+          class:lifted={drag?.active && drag.id === book.id}
+          class:drop-before={drop?.id === book.id && !drop.after}
+          class:drop-after={drop?.id === book.id && drop.after}
+          style:translate={drag?.active && drag.id === book.id ? `${drag.dx}px ${drag.dy}px` : null}
+          onpointerdown={(e) => grab(e, book.id)}
+          onkeydown={(e) => nudge(e, book.id)}
+        >
+          <Spine {book} {edition} authorName={authorOf(book)} shelf={shelfHeight} pages={pageCounts.get(book.id)} />
+        </div>
       {/each}
     {/each}
   </div>
@@ -371,6 +484,33 @@
     display: flex;
     align-items: flex-end;
   }
+
+  .arrange { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; margin: -6px 0 16px; font-size: 0.9rem; }
+
+  .arranging .slot { position: relative; cursor: grab; touch-action: pan-y; -webkit-touch-callout: none; user-select: none; }
+
+  .dragging, .dragging .slot { cursor: grabbing; }
+
+  /* While dragging, books stay put instead of swinging round to show their covers. */
+  .dragging :global(.box) { transform: none !important; transition: none !important; }
+
+  .slot.lifted { z-index: 10; pointer-events: none; opacity: 0.85; filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.5)); }
+
+  /* Where the book will go: a bright line between two spines. */
+  .drop-before::before, .drop-after::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: var(--board);
+    width: 4px;
+    border-radius: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .drop-before::before { left: -4px; }
+
+  .drop-after::after { right: -4px; }
 
   .grid {
     display: grid;

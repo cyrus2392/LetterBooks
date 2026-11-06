@@ -4,13 +4,15 @@
   import { faCheck } from '@fortawesome/free-solid-svg-icons';
   import { getYourAuthors } from '../lib/data.js';
   import { searchAuthors, searchBooks, normalizeTitle } from '../lib/sources.js';
+  import { fuzzyMatch } from '../lib/fuzzy.js';
   import { followedAuthors, readAuthorRefs, isRead } from '../lib/store.svelte.js';
   import { href } from '../lib/router.svelte.js';
 
   let { query } = $props();
 
   const needle = $derived(normalizeTitle(query));
-  const matches = (text) => normalizeTitle(text).includes(needle);
+  // Exactly as typed, or near enough (a typo or two).
+  const matches = (text) => normalizeTitle(text).includes(needle) || fuzzyMatch(query, text);
 
   // Instant results from your authors (curated, added, or read).
   const local = $derived(
@@ -62,9 +64,10 @@
     {#await remoteAuthors}
       <h2>More authors</h2>
       <p class="muted">Searching…</p>
-    {:then { source, authors }}
+    {:then { source, authors, correctedTo }}
       {@const fresh = authors.filter((a) => !local.knownKeys.has(a.olKey))}
       <h2>Authors on {source}</h2>
+      {#if correctedTo}<p class="muted note">No exact matches, so showing authors for “{correctedTo}”.</p>{/if}
       {#if source !== 'Open Library'}
         <p class="muted note">Open Library can't be reached right now, so these results come from {source}.</p>
       {/if}
@@ -94,10 +97,11 @@
     {#await remoteBooks}
       <h2>More books</h2>
       <p class="muted">Searching…</p>
-    {:then { source, books }}
+    {:then { source, books, correctedTo }}
       {@const localIds = new Set(local.books.map((b) => b.id))}
       {@const fresh = books.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, authorRef: b.authorKey }))}
       <h2>Books on {source}</h2>
+      {#if correctedTo}<p class="muted note">No exact matches, so showing books for “{correctedTo}”.</p>{/if}
       {#if fresh.length}
         {@render bookList(fresh)}
       {:else}

@@ -5,6 +5,7 @@
 // Node (scripts/, which install a DOMParser for the Wikipedia parsing).
 
 import { wikipediaBibliography } from './wikipedia.js';
+import { correct } from './fuzzy.js';
 
 const OL = 'https://openlibrary.org';
 const WIKIDATA = 'https://query.wikidata.org/sparql';
@@ -96,19 +97,39 @@ const wikidataAuthorNamed = (name) =>
     .then((people) => people.map(wikidataAuthor).find((a) => a.olKey && sameName(a.name, name) && WRITER.test(a.description ?? '')) ?? null)
     .catch(() => null);
 
+// Open Library only matches whole words as typed. When it finds nothing,
+// Hardcover's search (which allows for typos) suggests the words you
+// probably meant, and Open Library is asked again with those. The result
+// says what was searched for instead (correctedTo).
+async function withTypoFix(q, type, search, vocabOf) {
+  const found = await search(q);
+  if (found.length) return { found, correctedTo: null };
+  const hc = await hardcoverSearch(type, q);
+  const fixed = hc && correct(q, vocabOf(hc));
+  if (!fixed) return { found, correctedTo: null };
+  const again = await search(fixed).catch(() => []);
+  return again.length ? { found: again, correctedTo: fixed } : { found, correctedTo: null };
+}
+
+async function olAuthors(q, limit) {
+  const { docs } = await getJson(`${OL}/search/authors.json?q=${encodeURIComponent(q)}&limit=${limit}`);
+  return docs
+    .filter((d) => d.work_count > 0)
+    .map((d) => ({
+      olKey: d.key,
+      name: d.name,
+      topWork: d.top_work ?? null,
+      workCount: d.work_count,
+      birthDate: d.birth_date ?? null,
+    }));
+}
+
 export async function searchAuthors(q, limit = 10) {
   try {
-    const { docs } = await getJson(`${OL}/search/authors.json?q=${encodeURIComponent(q)}&limit=${limit}`);
-    const authors = docs
-      .filter((d) => d.work_count > 0)
-      .map((d) => ({
-        olKey: d.key,
-        name: d.name,
-        topWork: d.top_work ?? null,
-        workCount: d.work_count,
-        birthDate: d.birth_date ?? null,
-      }));
-    return { source: 'Open Library', authors };
+    const { found, correctedTo } = await withTypoFix(q, 'author', (text) => olAuthors(text, limit), (hc) =>
+      hc.filter((h) => h.books >= 3).slice(0, 3).map((h) => h.name),
+    );
+    return { source: 'Open Library', authors: found, correctedTo };
   } catch (error) {
     const [hc, people] = await Promise.all([hardcoverSearch('author', q), wikidataSearch(q, ['P648', 'P31=Q5'], limit).catch(() => null)]);
     if (!hc && !people) throw error;
@@ -128,22 +149,28 @@ export async function searchAuthors(q, limit = 10) {
   }
 }
 
+async function olBooks(q, limit) {
+  const fields = 'key,title,author_name,author_key,cover_i,first_publish_year';
+  const { docs } = await getJson(`${OL}/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=${limit}`);
+  return docs
+    .filter((d) => d.author_key?.length)
+    .map((d) => ({
+      id: d.key.replace('/works/', ''),
+      title: d.title,
+      year: d.first_publish_year ?? null,
+      olWorkId: d.key.replace('/works/', ''),
+      coverId: d.cover_i ?? null,
+      authorName: d.author_name[0],
+      authorKey: d.author_key[0],
+    }));
+}
+
 export async function searchBooks(q, limit = 12) {
   try {
-    const fields = 'key,title,author_name,author_key,cover_i,first_publish_year';
-    const { docs } = await getJson(`${OL}/search.json?q=${encodeURIComponent(q)}&fields=${fields}&limit=${limit}`);
-    const books = docs
-      .filter((d) => d.author_key?.length)
-      .map((d) => ({
-        id: d.key.replace('/works/', ''),
-        title: d.title,
-        year: d.first_publish_year ?? null,
-        olWorkId: d.key.replace('/works/', ''),
-        coverId: d.cover_i ?? null,
-        authorName: d.author_name[0],
-        authorKey: d.author_key[0],
-      }));
-    return { source: 'Open Library', books };
+    const { found, correctedTo } = await withTypoFix(q, 'book', (text) => olBooks(text, limit), (hc) =>
+      hc.slice(0, 3).flatMap((h) => [h.title, ...h.authors]),
+    );
+    return { source: 'Open Library', books: found, correctedTo };
   } catch (error) {
     const [hc, fromWikidata] = await Promise.all([hardcoverSearch('book', q), wikidataBooks(q, limit).catch(() => null)]);
     if (!hc && !fromWikidata) throw error;

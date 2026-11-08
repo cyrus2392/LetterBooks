@@ -86,6 +86,16 @@ function dominant(pixels) {
   return toHex([best.r, best.g, best.b].map((v) => (v / best.n) * 0.85));
 }
 
+// The spine colour for an image already loaded (an uploaded cover, say).
+export function colourOfImage(img) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 12;
+  canvas.height = 18;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return dominant(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
+}
+
 // A colour already worked out for this cover, if any, without waiting.
 export const knownColour = (url) => (url ? (colours()[url] ?? null) : null);
 

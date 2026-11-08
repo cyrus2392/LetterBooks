@@ -1,12 +1,14 @@
 <script>
-  // Modal for choosing a book's cover from its editions. The choice applies
-  // everywhere the book appears; "Use automatic cover" goes back to the UK pick.
+  // Modal for choosing a book's cover from its editions, or uploading your
+  // own. The choice applies everywhere the book appears; "Use automatic
+  // cover" goes back to the UK pick.
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
-  import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
+  import { faCheck, faXmark, faUpload } from '@fortawesome/free-solid-svg-icons';
   import { directCoverUrl } from '../lib/data.js';
   import { fetchEditionCovers } from '../lib/sources.js';
-  import { chosenCover, setChosenCover } from '../lib/store.svelte.js';
+  import { chosenCover, setChosenCover, uploadedCover, setUploadedCover } from '../lib/store.svelte.js';
+  import { prepareCover } from '../lib/upload.js';
 
   let { book, onclose } = $props();
 
@@ -23,6 +25,26 @@
   }
   let showAll = $state(false);
   const current = untrack(() => chosenCover(book.id));
+  const uploaded = untrack(() => uploadedCover(book.id));
+  let uploading = $state(false);
+  let uploadError = $state('');
+
+  async function upload(event) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = ''; // so picking the same file again still counts
+    if (!file) return;
+    uploading = true;
+    uploadError = '';
+    try {
+      const { src, colour } = await prepareCover(file);
+      setUploadedCover(book.id, src, colour);
+      close();
+    } catch (error) {
+      uploadError = error.message;
+    } finally {
+      uploading = false;
+    }
+  }
   const covers = untrack(() => fetchEditionCovers(book.olWorkId));
 
   $effect(() => {
@@ -45,6 +67,24 @@
     </div>
     <button class="close" aria-label="Close" onclick={() => close()}><Icon icon={faXmark} /></button>
   </header>
+
+  <div class="own">
+    {#if uploaded}
+      <div class="option selected mine" aria-label="Your uploaded cover">
+        <img src={uploaded.src} alt="" />
+        <span class="tick"><Icon icon={faCheck} /></span>
+      </div>
+    {/if}
+    <div>
+      <label class="btn" class:busy={uploading}>
+        <Icon icon={faUpload} />
+        {uploading ? 'Preparing…' : uploaded ? 'Upload a different cover' : 'Upload your own cover'}
+        <input type="file" accept="image/*" onchange={upload} disabled={uploading} />
+      </label>
+      <p class="muted hint">A photo of your copy works well. It's kept in this browser and included in your backup.</p>
+      {#if uploadError}<p class="error" role="alert">{uploadError}</p>{/if}
+    </div>
+  </div>
 
   {#await covers}
     <p class="muted">Loading editions…</p>
@@ -82,7 +122,7 @@
   {/await}
 
   <footer>
-    {#if current}
+    {#if current || uploaded}
       <button class="btn" onclick={() => choose(null)}>Use automatic cover</button>
     {/if}
     <span class="spacer"></span>
@@ -212,4 +252,20 @@
   }
 
   .spacer { flex: 1; }
+
+  .own { display: flex; align-items: center; gap: 16px; padding: 14px 20px 0; }
+
+  .own .mine { width: 70px; flex: none; }
+
+  .own label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+
+  .own label.busy { opacity: 0.6; cursor: progress; }
+
+  .own input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+  .own label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .hint { margin: 6px 0 0; font-size: 0.8rem; }
+
+  .error { margin: 6px 0 0; font-size: 0.85rem; color: #e5534b; }
 </style>

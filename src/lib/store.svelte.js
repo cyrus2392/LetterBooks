@@ -364,8 +364,6 @@ export function setDismissed(key, dismissed) {
   save();
 }
 
-// Covers you've chosen for books, overriding the automatic UK pick everywhere.
-
 // Your own order for a library tab ('owned' or 'read'), from dragging books
 // around the shelf. Books added since go after these.
 export const shelfOrder = (tab) => data.shelfOrder?.[tab] ?? [];
@@ -377,11 +375,47 @@ export function setShelfOrder(tab, ids) {
   save();
 }
 
+// Covers you've chosen for books, overriding the automatic UK pick everywhere.
 export const chosenCover = (bookId) => data.covers[bookId] ?? null;
 
 export function setChosenCover(bookId, coverId) {
   if (coverId) data.covers[bookId] = coverId;
   else delete data.covers[bookId];
+  delete uploads[bookId]; // one choice at a time
+  saveUploads();
+  save();
+}
+
+// Covers you've uploaded: bookId -> { src (a small JPEG data URL), colour }.
+// Kept under their own key so the images don't slow down every save of
+// your reading data.
+const UPLOADS_KEY = 'letterbooks:uploads';
+function loadUploads() {
+  try {
+    return JSON.parse(localStorage.getItem(UPLOADS_KEY)) ?? {};
+  } catch {
+    return {};
+  }
+}
+const uploads = $state(loadUploads());
+function saveUploads() {
+  localStorage.setItem(UPLOADS_KEY, JSON.stringify(uploads));
+}
+
+export const uploadedCover = (bookId) => uploads[bookId] ?? null;
+
+// Throws if the browser's storage is full, leaving things as they were.
+export function setUploadedCover(bookId, src, colour) {
+  const before = uploads[bookId];
+  uploads[bookId] = { src, colour };
+  try {
+    saveUploads();
+  } catch {
+    if (before) uploads[bookId] = before;
+    else delete uploads[bookId];
+    throw new Error("There's no room left in this browser's storage for another cover.");
+  }
+  delete data.covers[bookId];
   save();
 }
 
@@ -399,7 +433,7 @@ const clean = ({ startedOn, finishedOn, rating, review }) => ({
 
 // Backup
 
-export const exportData = () => JSON.stringify(data, null, 2);
+export const exportData = () => JSON.stringify({ ...data, uploads }, null, 2);
 
 export function importData(json) {
   const parsed = migrate(JSON.parse(json));
@@ -409,5 +443,14 @@ export function importData(json) {
   data.hidden = parsed.hidden;
   data.dismissed = parsed.dismissed;
   data.covers = parsed.covers;
+  data.shelfOrder = parsed.shelfOrder ?? {};
+  for (const id of Object.keys(uploads)) delete uploads[id];
+  Object.assign(uploads, parsed.uploads ?? {});
+  delete data.uploads; // kept separately, not in the reading data
+  try {
+    saveUploads();
+  } catch {
+    // Too big for this browser; the covers last until the page is closed.
+  }
   save();
 }

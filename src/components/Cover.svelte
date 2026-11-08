@@ -1,6 +1,6 @@
 <script>
   import { bookCoverUrl, directCoverUrl } from '../lib/data.js';
-  import { lentTo, borrowedFrom, chosenCover } from '../lib/store.svelte.js';
+  import { lentTo, borrowedFrom, chosenCover, uploadedCover } from '../lib/store.svelte.js';
 
   let { book, size = 'M' } = $props();
 
@@ -12,9 +12,13 @@
   // Covers come from the covers Worker. If it can't be reached, the same
   // cover (or the default one) comes straight from Open Library instead, and
   // failing that Hardcover's cover, if the book has one.
+  // A cover you uploaded beats everything.
   const chosen = $derived(book.id ? chosenCover(book.id) : null);
+  const mine = $derived(book.id ? uploadedCover(book.id) : null);
   const sources = $derived(
-    [...new Set([bookCoverUrl(book, chosen, size), directCoverUrl(chosen ?? book.coverId, size), !chosen && book.image])].filter(Boolean),
+    mine
+      ? [mine.src]
+      : [...new Set([bookCoverUrl(book, chosen, size), directCoverUrl(chosen ?? book.coverId, size), !chosen && book.image])].filter(Boolean),
   );
   let failed = $state([]); // URLs that didn't load
   const src = $derived(sources.find((url) => !failed.includes(url)) ?? null);

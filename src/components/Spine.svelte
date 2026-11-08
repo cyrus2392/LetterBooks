@@ -6,7 +6,7 @@
   import { faCheck, faHandHoldingHand } from '@fortawesome/free-solid-svg-icons';
   import { href } from '../lib/router.svelte.js';
   import { bookCoverUrl } from '../lib/data.js';
-  import { chosenCover } from '../lib/store.svelte.js';
+  import { chosenCover, uploadedCover } from '../lib/store.svelte.js';
   import { spineShape, spineColour, knownColour, fallbackColour, inkFor } from '../lib/spines.js';
 
   // `shelf` is the height of the shelf in px; books stand a little shorter.
@@ -44,12 +44,14 @@
   const coverUrl = $derived(bookCoverUrl(book, chosenCover(book.id), 'S'));
   let sampled = $state(null);
   $effect(() => {
-    if (!near || knownColour(coverUrl)) return;
+    if (!near || mine || knownColour(coverUrl)) return;
     let current = true;
     spineColour(coverUrl).then((c) => current && (sampled = c));
     return () => (current = false);
   });
-  const fill = $derived(knownColour(coverUrl) ?? sampled ?? fallbackColour(book.id));
+  // An uploaded cover's colour was worked out when you uploaded it.
+  const mine = $derived(uploadedCover(book.id));
+  const fill = $derived(mine?.colour ?? knownColour(coverUrl) ?? sampled ?? fallbackColour(book.id));
 
   // Near either end of the bookcase, slide the cover inwards so it stays
   // inside it (and never makes the page scroll sideways on a phone).

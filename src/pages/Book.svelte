@@ -7,7 +7,7 @@
   import Icon from '../components/Icon.svelte';
   import { faCheck, faBook, faBookOpenReader, faBookmark, faHandHolding, faHandHoldingHand, faRotateLeft, faImage, faStar } from '@fortawesome/free-solid-svg-icons';
   import { getBook, getBookDetails, TYPE_LABELS } from '../lib/data.js';
-  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, formatOf, setFormat, FORMATS, borrowedFrom, borrowsOf, giveBack, chosenCover } from '../lib/store.svelte.js';
+  import { isRead, isOwned, shelfOf, setShelf, readsOf, latestRating, getEntry, lentTo, loansOf, markReturned, formatOf, setFormat, FORMATS, borrowedFrom, borrowsOf, giveBack, chosenCover, uploadedCover } from '../lib/store.svelte.js';
   import { toggleRead, toggleOwned } from '../lib/actions.js';
   import { formatDate, formatRelease } from '../lib/format.js';
   import { href } from '../lib/router.svelte.js';
@@ -39,7 +39,7 @@
       {#if book.olWorkId}
         <p class="cover-actions">
           <button class="link" onclick={() => (pickingCover = true)}><Icon icon={faImage} /> Change cover</button>
-          {#if chosenCover(book.id)}<span class="muted">· chosen by you</span>{/if}
+          {#if uploadedCover(book.id)}<span class="muted">· uploaded by you</span>{:else if chosenCover(book.id)}<span class="muted">· chosen by you</span>{/if}
         </p>
       {/if}
     </div>

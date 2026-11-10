@@ -445,26 +445,224 @@ function booksFromWikipedia(olKey, wikiBooks, docs, wikidata) {
   return books;
 }
 
-// When Open Library can't be reached, a best guess at the real books from
-// Hardcover's list instead: books people have actually shelved, one per title.
-function guessBooksFromHardcover(olKey, hcBooks, wdDocs) {
-  const thisYear = new Date().getFullYear();
-  const byTitle = new Map();
-  for (const b of hcBooks) {
-    if (!b.year || b.year > thisYear || b.compilation || b.readers < 5 || NOT_A_BOOK.test(b.title)) continue;
-    const key = normalizeTitle(b.title.replace(/[:.(].*$/, ''));
-    if (!byTitle.has(key) || b.readers > byTitle.get(key).readers) byTitle.set(key, b);
+// Hardcover entries that aren't books in their own right: split-volume and
+// dramatised audio editions, excerpts, magazines, placeholders for unnamed
+// books, and the like.
+const NOT_ON_LIST = new RegExp(
+  [
+    '\\bprologue to\\b', '\\bissue #?\\d', '#\\d+\\b', '\\(text from\\b', '^untitled\\b', '\\bsplit (volume )?edition\\b',
+    '\\bchapter sampler\\b', '\\bannotations\\b', '\\bgraphic novel\\b', '\\billustrated (edition|screenplay)\\b',
+    '\\bscreenplay\\b', '\\bthe play\\b', '\\bradio (drama|dramati[sz]ation|play|series|adaptation)\\b', '\\bfilm companion\\b', '\\bthe art of\\b',
+    '\\bstorybook\\b', '\\bbonus content\\b', '\\bappendices\\b', '\\bphase$', '\\bjackanory\\b', '\\bofficial (guide|companion)\\b',
+  ].join('|'),
+  'i',
+);
+const EDITION_SERIES = /split|dramati[sz]ed/i;
+
+// "Volume One", "Book 2", "Vol. 3", "A Novel": subtitles that only say where
+// a book sits, or what it is.
+const NUMBER = '(\\d+|one|two|three|four|five|six|seven|eight|nine|ten)';
+const PLACE_SUBTITLE = new RegExp(`\\b(vol(ume)?\\.?|book|part) ${NUMBER}$`, 'i');
+const PLACE_SUFFIX = new RegExp(`[,:]?\\s+(vol(ume)?\\.?|book) ${NUMBER}\\b.*$`, 'i');
+
+// A Hardcover title as people know it: "La Belle Sauvage: The Book of Dust
+// Volume One" is La Belle Sauvage (the subtitle is just its series and
+// number), "Circe: A Novel" is Circe. "Red Rising: Sons of Ares Vol. 1"
+// stays as it is: Sons of Ares isn't the series.
+function plainTitle(title, series = []) {
+  const [before, ...rest] = title.split(/:\s+/);
+  if (!rest.length) return title;
+  const subtitle = rest.join(': ');
+  if (/^an? (novel|memoir)$/i.test(subtitle)) return before;
+  const seriesName = normalizeTitle(subtitle.replace(PLACE_SUFFIX, '').replace(new RegExp(`\\s*(vol(ume)?\\.?|book) ${NUMBER}$`, 'i'), ''));
+  return PLACE_SUBTITLE.test(subtitle) && series.some((s) => normalizeTitle(s.name) === seriesName) ? before : title;
+}
+
+// The ways a title might be written elsewhere: without a series name in
+// front ("Mistborn: The Final Empire"), a series note after it ("(The
+// Belgariad)"), or a volume number ("Sons of Ares Vol. 1").
+const variantsSeen = new Map();
+function titleVariants(title) {
+  if (!variantsSeen.has(title)) variantsSeen.set(title, variantsOf(title));
+  return variantsSeen.get(title);
+}
+function variantsOf(title) {
+  const clean = title.replace(/\s*\([^)]*\)\s*$/, '');
+  const parts = clean.split(/:\s+/);
+  const variants = [clean, plainTitle(clean), parts.slice(1).join(': '), parts.at(-1)];
+  // (plainTitle without series only drops "A Novel".)
+  const unnumbered = clean.replace(PLACE_SUFFIX, '');
+  if (unnumbered !== clean) variants.push(unnumbered, unnumbered.split(/:\s+/).at(-1));
+  return new Set(variants.filter(Boolean).map(normalizeTitle).filter((v) => v.length >= 3));
+}
+
+// How surely two titles are the same book: 3, the same words; 2, one of the
+// variants above; 1, only the part before a subtitle ("The Weirdstone of
+// Brisingamen: A Tale of Alderley") or one ending with the other ("Alcatraz
+// Versus the Dark Talent" / "The Dark Talent"); 0, different books.
+function titleMatch(a, b) {
+  const [x, y] = [normalizeTitle(a), normalizeTitle(b)];
+  if (x === y) return 3;
+  const [va, vb] = [titleVariants(a), titleVariants(b)];
+  if ([...va].some((v) => vb.has(v))) return 2;
+  const before = (t) => normalizeTitle(t.split(/:\s+/)[0]);
+  if ((before(a).length >= 5 && vb.has(before(a))) || (before(b).length >= 5 && va.has(before(b)))) return 1;
+  const [shorter, longer] = x.length < y.length ? [x, y] : [y, x];
+  return shorter.length >= 8 && longer.endsWith(shorter) ? 1 : 0;
+}
+const titlesMatch = (a, b) => titleMatch(a, b) >= 2;
+
+// The best entry in `list` for a title: the surest match, then the heaviest.
+function findTitle(title, list, titleOf, weight = () => 0) {
+  let best = null;
+  let bestScore = 0;
+  for (const d of list) {
+    const score = titleMatch(titleOf(d), title);
+    if (score > bestScore || (score && score === bestScore && weight(d) > weight(best))) [best, bestScore] = [d, score];
   }
-  const seen = new Set();
+  return best;
+}
+
+// Pairs each title with an entry in `list`, surest matches first, so a loose
+// match can't take an entry that belongs to another title ("Legion" and
+// "Legion: Skin Deep"). Returns Map(title index -> entry).
+function pairTitles(titles, list, titleOf, weight = () => 0) {
+  const pairs = [];
+  titles.forEach((title, i) =>
+    list.forEach((d) => {
+      const score = titleMatch(title, titleOf(d));
+      if (score) pairs.push({ i, d, score });
+    }),
+  );
+  pairs.sort((p, q) => q.score - p.score || weight(q.d) - weight(p.d));
+  const paired = new Map();
+  const taken = new Set();
+  for (const { i, d } of pairs) {
+    if (paired.has(i) || taken.has(d)) continue;
+    paired.set(i, d);
+    taken.add(d);
+  }
+  return paired;
+}
+
+// An author's list from Hardcover: the books people actually shelve, one
+// per title, leaving out announced books until they're out. Each book keeps
+// the id it already had (`known`: your logged books, then the last list),
+// else gets its Open Library work's id, so your reading log still lines up.
+// Books you've logged are always kept, however few readers they have.
+function booksFromHardcover(olKey, allHcBooks, docs, wikidata, known) {
+  const thisYear = new Date().getFullYear();
+  const hcBooks = allHcBooks.map((b) => ({ ...b, title: plainTitle(b.title, b.series) }));
+  const isEdition = (b) => b.series.length > 0 && b.series.every((s) => EDITION_SERIES.test(s.name));
+  const listable = hcBooks.filter(
+    (b) => b.year && b.year <= thisYear && !b.compilation && !isEdition(b) && isBook(b.title) && !NOT_ON_LIST.test(b.title),
+  );
+  // Little-read entries are mostly oddments (chapbooks, contributions to
+  // anthologies), so the bar rises with how widely read the author is.
+  const top = Math.max(0, ...listable.map((b) => b.readers));
+  const bar = Math.max(5, Math.round(top * 0.01));
+  const logged = known.filter((k) => k.logged);
+  const chosen = [];
+  for (const b of [...listable].sort((x, y) => y.readers - x.readers)) {
+    const wanted = b.readers >= bar || logged.some((k) => titlesMatch(k.title, b.title));
+    if (wanted && !chosen.some((c) => titlesMatch(c.title, b.title))) chosen.push(b);
+  }
+
+  const titles = chosen.map((b) => b.title);
+  const keeps = pairTitles(titles, known, (k) => k.title, (k) => (k.logged ? 1 : 0));
+  const keptIds = new Set([...keeps.values()].map((k) => k.id));
+  const docsFor = pairTitles(titles, docs.filter((d) => !keptIds.has(d.key.replace('/works/', ''))), (d) => d.title, (d) => d.edition_count ?? 0);
+  const used = new Set();
   const books = [];
-  for (const b of byTitle.values()) {
-    const workId = matchWork(b.title, wdDocs)?.key.replace('/works/', '') ?? null;
-    const id = workId ?? `${olKey}-${normalizeTitle(b.title)}`;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    books.push({ id, olWorkId: workId, title: b.title, year: b.year, coverId: null, readers: 0 });
+  for (const [i, b] of chosen.entries()) {
+    const keep = keeps.get(i);
+    const doc = docsFor.get(i);
+    const docId = doc?.key.replace('/works/', '') ?? null;
+    const id = keep?.id ?? docId ?? `${olKey}-${normalizeTitle(b.title)}`;
+    if (used.has(id)) continue;
+    used.add(id);
+    const olWorkId = /^OL\d+W$/.test(id) ? id : docId;
+    if (olWorkId) used.add(olWorkId);
+    const wd = olWorkId ? wikidata.get(olWorkId) : null;
+    if (wd?.types.size && [...wd.types].every((t) => NOT_A_BOOK_TYPE.test(t))) continue;
+    const series = b.series.filter((s) => !EDITION_SERIES.test(s.name));
+    books.push({
+      id,
+      olWorkId,
+      title: b.title,
+      // Hardcover's year is sometimes another edition's; Wikidata records the first publication.
+      year: wd?.year ?? b.year,
+      type: wd ? typeFrom(wd.types) : null,
+      ...(series.length && { series }),
+      coverId: doc?.cover_i ?? null,
+      ...(b.image && { image: b.image }),
+      readers: b.readers,
+      ...((b.pages || doc?.number_of_pages_median) && { pages: b.pages || doc.number_of_pages_median }),
+      hardcover: { slug: b.slug, rating: b.rating, ratings: b.ratings },
+    });
   }
   return books;
+}
+
+// Books you've logged always stay on the list, even ones the sources leave
+// out (graphic novels, books not out yet, ones listed under another title):
+// as the last list had them, else as Hardcover has them.
+function keepLogged(books, known, hcBooks) {
+  for (const k of known) {
+    if (!k.logged || books.some((b) => b.id === k.id)) continue;
+    const hc = hcBooks && findTitle(k.title, hcBooks.filter((b) => !NOT_ON_LIST.test(b.title) && titlesMatch(b.title, k.title)), (b) => b.title, (b) => b.readers);
+    if (k.book) {
+      books.push(k.book);
+    } else if (hc) {
+      const series = hc.series.filter((s) => !EDITION_SERIES.test(s.name));
+      books.push({
+        id: k.id,
+        olWorkId: /^OL\d+W$/.test(k.id) ? k.id : null,
+        title: plainTitle(hc.title, hc.series),
+        year: hc.year,
+        ...(series.length && { series }),
+        coverId: null,
+        ...(hc.image && { image: hc.image }),
+        readers: hc.readers,
+        ...(hc.pages && { pages: hc.pages }),
+        hardcover: { slug: hc.slug, rating: hc.rating, ratings: hc.ratings },
+      });
+    }
+  }
+}
+
+// Hardcover's series include one-offs ("Cujo / Rattlesnakes", a single
+// book in a "series" of its own). A series with one book on the list only
+// stays if that book isn't its first (Wheel of Time #12).
+function tidySeries(books) {
+  const count = new Map();
+  for (const b of books) for (const s of b.series ?? []) count.set(s.name, (count.get(s.name) ?? 0) + 1);
+  for (const b of books) {
+    if (!b.series) continue;
+    b.series = b.series.filter((s) => !s.name.includes(' / ') && (count.get(s.name) > 1 || s.position > 1));
+    if (!b.series.length) delete b.series;
+  }
+}
+
+// A book can be in several series: "The Mistborn Saga", the wider
+// "Cosmere", and the narrower "The Mistborn Saga: The Original Trilogy".
+// Its main series goes first, so shelves keep Mistborn together: umbrella
+// series (ones holding all of another of its series) and named parts of
+// another series go after the rest, which keep Hardcover's order.
+function mainSeriesFirst(books) {
+  const members = new Map();
+  for (const b of books) for (const s of b.series ?? []) members.set(s.name, (members.get(s.name) ?? new Set()).add(b));
+  const isPartOf = (part, whole) => part !== whole && normalizeTitle(part).startsWith(normalizeTitle(whole));
+  const holds = (outer, inner) =>
+    outer !== inner && !isPartOf(inner, outer) && members.get(outer).size > members.get(inner).size && [...members.get(inner)].every((b) => members.get(outer).has(b));
+  const names = [...members.keys()];
+  const umbrellas = new Set(names.filter((outer) => names.some((inner) => holds(outer, inner))));
+  for (const b of books) {
+    if (!b.series || b.series.length < 2) continue;
+    const own = b.series.map((s) => s.name);
+    const rank = (s) => (own.some((n) => isPartOf(s.name, n)) ? 2 : umbrellas.has(s.name) ? 1 : 0);
+    b.series = b.series.map((s, i) => ({ s, i, r: rank(s) })).sort((x, y) => x.r - y.r || x.i - y.i).map(({ s }) => s);
+  }
 }
 
 // Fills what a book is missing from its Hardcover entry: length, series,
@@ -480,13 +678,13 @@ function addHardcover(books, hcBooks) {
   }
 }
 
-// An author's books on Hardcover, via the Worker; null if Hardcover can't be
+// An author and their books on Hardcover ({ author, books }), via the Worker; null if Hardcover can't be
 // reached or has no token set (lookups don't work from Node scripts either).
 async function fetchHardcover(name) {
   if (isNode) return null;
   try {
     const res = await fetch(`${WORKER}/hardcover/author?name=${encodeURIComponent(name)}`, { signal: AbortSignal.timeout(10000) });
-    return res.ok ? (await res.json()).books : null;
+    return res.ok ? await res.json() : null;
   } catch {
     return null;
   }
@@ -501,37 +699,53 @@ async function wikidataAuthorName(olKey) {
   return results.bindings[0]?.name.value ?? null;
 }
 
-// Build an author's bibliography automatically: Wikipedia's bibliography
-// when it has one, otherwise a best guess from Open Library. Either way,
-// books are matched to Open Library works for ids and covers, and gaps are
-// filled from Hardcover. If Open Library can't be reached, Hardcover stands
-// in for it, and the list is marked temporary so it's rebuilt later with
-// Open Library's ids (which your reading log refers to).
-export async function buildAuthor(olKey) {
+// Build an author's bibliography automatically. Hardcover's list comes
+// first; when Hardcover can't be reached (or doesn't know the author),
+// Wikipedia's bibliography, else a best guess from Open Library. Books are
+// matched to Open Library works for ids and covers either way. If Open
+// Library can't be reached, Wikidata's records of its ids stand in, and the
+// list is marked temporary so it's rebuilt later with Open Library's own.
+// `known` is [{ id, title, logged, book }]: books that already have an id
+// (your logged books, then the last list's), which keep it; `book` is the
+// last list's entry, for logged books.
+export async function buildAuthor(olKey, known = []) {
   const author = getJson(`${OL}/authors/${olKey}.json`).catch(() => null);
   const name = author.then((a) => a?.name ?? wikidataAuthorName(olKey).catch(() => null));
-  const [authorName, docs, wikidata, wiki, hcBooks] = await Promise.all([
+  const [authorName, docs, wikidata, hc] = await Promise.all([
     name,
     fetchOpenLibraryDocs(olKey).catch(() => null),
     fetchWikidataWorks(olKey).catch(() => new Map()), // series are a bonus; don't fail without them
-    wikipediaBibliography(olKey).catch((error) => ({ error })),
     name.then((n) => (n ? fetchHardcover(n) : null)),
   ]);
+  const hcBooks = hc?.books ?? null;
   const olDown = !(await author) || !docs;
-  // A main article with only a handful of italicised titles isn't a bibliography.
-  const useWikipedia = wiki && !wiki.error && wiki.books.length >= 8;
-  if (!authorName || (olDown && !useWikipedia && !hcBooks?.length)) throw new Error("Open Library can't be reached");
+  if (!authorName) throw new Error("Open Library can't be reached");
   // Without Open Library's list of works, Wikidata's (which have Open Library
   // ids and titles) give most books their usual id and cover.
   const wdDocs = [...wikidata]
     .filter(([, w]) => w.title)
     .map(([id, w]) => ({ key: `/works/${id}`, title: w.title, first_publish_year: w.year, edition_count: 0 }));
-  const books = useWikipedia
-    ? booksFromWikipedia(olKey, wiki.books, docs ?? wdDocs, wikidata)
-    : olDown
-      ? guessBooksFromHardcover(olKey, hcBooks, wdDocs)
-      : guessBooksFromOpenLibrary(olKey, docs, wikidata);
-  if (hcBooks) addHardcover(books, hcBooks);
+
+  let books = hcBooks?.length ? booksFromHardcover(olKey, hcBooks, docs ?? wdDocs, wikidata, known) : [];
+  let source = { name: 'Hardcover', ...(hc?.author?.slug && { url: `https://hardcover.app/authors/${hc.author.slug}` }) };
+  if (!books.length) {
+    // Wikipedia is only asked when Hardcover can't help.
+    const wiki = await wikipediaBibliography(olKey).catch((error) => ({ error }));
+    // A main article with only a handful of italicised titles isn't a bibliography.
+    const useWikipedia = wiki && !wiki.error && wiki.books.length >= 8;
+    if (olDown && !useWikipedia) throw new Error("Open Library can't be reached");
+    books = useWikipedia ? booksFromWikipedia(olKey, wiki.books, docs ?? wdDocs, wikidata) : guessBooksFromOpenLibrary(olKey, docs, wikidata);
+    if (hcBooks) addHardcover(books, hcBooks);
+    source = useWikipedia
+      ? { name: 'Wikipedia', title: wiki.sourceTitle, url: wiki.sourceUrl, mainArticle: wiki.mainArticle }
+      : { name: 'Open Library' };
+    // Hardcover or Wikipedia being down (or Hardcover's rate limit) shouldn't stick for a week.
+    if (hc === null || (!useWikipedia && wiki?.error)) source.temporary = true;
+  }
+  if (olDown) Object.assign(source, { temporary: true, openLibraryDown: true });
+  keepLogged(books, known, hcBooks);
+  if (source.name === 'Hardcover') tidySeries(books);
+  mainSeriesFirst(books);
   books.sort((a, b) => a.year - b.year || a.title.localeCompare(b.title));
 
   return {
@@ -539,15 +753,9 @@ export async function buildAuthor(olKey) {
     name: authorName,
     olKey,
     live: true,
-    // `temporary` marks a fallback caused by Wikipedia or Open Library being
-    // unreachable, which shouldn't be cached.
-    source: {
-      ...(useWikipedia
-        ? { name: 'Wikipedia', title: wiki.sourceTitle, url: wiki.sourceUrl, mainArticle: wiki.mainArticle }
-        : { name: olDown ? 'Hardcover' : 'Open Library' }),
-      ...((olDown || (!useWikipedia && wiki?.error)) && { temporary: true }),
-      ...(olDown && { openLibraryDown: true }),
-    },
+    // `temporary` marks a fallback caused by a source being unreachable,
+    // which shouldn't be cached.
+    source,
     updatedAt: new Date().toISOString().slice(0, 10),
     books,
   };
@@ -817,11 +1025,40 @@ function cleanDescription(text) {
   return prose.length >= 60 ? prose : null;
 }
 
-// Release date, synopsis and genres for a book, from Wikidata (linked by
-// Open Library work id, or via the book's Wikipedia article), Open Library's
-// description and Wikipedia's summary. Every part is optional.
-export async function fetchBookDetails({ olWorkId, title, authorName }) {
-  const [wd, work] = await Promise.all([
+// A book's description, release date and genres on Hardcover, via the
+// Worker; null if it can't be reached.
+async function hardcoverBook(slug) {
+  if (isNode || !slug) return null;
+  try {
+    const res = await fetch(`${WORKER}/hardcover/book?slug=${encodeURIComponent(slug)}`, { signal: AbortSignal.timeout(8000) });
+    return res.ok ? (await res.json()).book : null;
+  } catch {
+    return null;
+  }
+}
+
+// Hardcover's genre tags include catch-alls and shelving labels.
+const VAGUE_GENRE = /^(general|fiction|adult|adult fiction|literature|novels?|books?|epic|audiobooks?|e-?books?|science fiction (&|and) fantasy|sci-fi (&|and) fantasy|literary|contemporary)$/i;
+const hardcoverGenres = (tags = []) => {
+  const seen = new Set();
+  return tags.filter((t) => !VAGUE_GENRE.test(t) && !seen.has(t.toLowerCase()) && seen.add(t.toLowerCase())).slice(0, 4);
+};
+
+// Hardcover gives 1 January when it only knows the year.
+function hardcoverDate(date) {
+  if (!/^\d{4}-\d\d-\d\d$/.test(date ?? '')) return null;
+  return date.endsWith('-01-01') ? { date, precision: 9 } : { date, precision: 11 };
+}
+
+const plainText = (html) => html?.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>\s*<p[^>]*>/gi, '\n\n').replace(/<[^>]+>/g, '');
+
+// Release date, synopsis and genres for a book: Hardcover's first, then
+// Wikidata (linked by Open Library work id, or via the book's Wikipedia
+// article), Open Library's description and Wikipedia's summary for whatever
+// Hardcover doesn't have. Every part is optional.
+export async function fetchBookDetails({ olWorkId, title, authorName, hardcoverSlug }) {
+  const [hc, wd, work] = await Promise.all([
+    hardcoverBook(hardcoverSlug),
     olWorkId ? wikidataBook(`?item wdt:P648 "${olWorkId}" .`).catch(() => null) : null,
     olWorkId ? getJson(`${OL}/works/${olWorkId}.json`).catch(() => null) : null,
   ]);
@@ -831,16 +1068,25 @@ export async function fetchBookDetails({ olWorkId, title, authorName }) {
   if (!wiki) wiki = await findWikipediaArticle(title, authorName).catch(() => null);
   if (!facts && wiki?.qid) facts = await wikidataBook(`VALUES ?item { wd:${wiki.qid} }`).catch(() => null);
 
+  const hcBlurb = cleanDescription(plainText(hc?.description));
   const blurb = cleanDescription(typeof work?.description === 'string' ? work.description : work?.description?.value);
-  const synopsis = blurb
-    ? { text: blurb, source: 'Open Library', url: `https://openlibrary.org/works/${olWorkId}` }
-    : wiki
-      ? { text: wiki.extract, source: 'Wikipedia', url: wiki.url }
-      : null;
+  const synopsis = hcBlurb
+    ? { text: hcBlurb, source: 'Hardcover', url: `https://hardcover.app/books/${hardcoverSlug}` }
+    : blurb
+      ? { text: blurb, source: 'Open Library', url: `https://openlibrary.org/works/${olWorkId}` }
+      : wiki
+        ? { text: wiki.extract, source: 'Wikipedia', url: wiki.url }
+        : null;
+
+  // Hardcover's date unless it only has the year and another source has the day.
+  const hcDate = hardcoverDate(hc?.released);
+  const other = facts?.released ?? (wiki ? dateFromText(wiki.extract) : null);
+  const released = hcDate && (hcDate.precision === 11 || !other || other.precision <= 9) ? hcDate : (other ?? hcDate);
+  const genres = hardcoverGenres(hc?.genres);
 
   return {
-    released: facts?.released ?? (wiki ? dateFromText(wiki.extract) : null),
-    genres: facts?.genres ?? [],
+    released,
+    genres: genres.length ? genres : (facts?.genres ?? []),
     synopsis,
     wikipediaUrl: wiki?.url ?? null,
   };

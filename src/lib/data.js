@@ -1,6 +1,7 @@
-// Book data. Curated authors are static JSON under public/data (built by
-// scripts/import-author.mjs); any other author is built live from
-// Wikipedia + Open Library + Wikidata and cached in the browser for a week.
+// Book data. Author lists are built live from Hardcover (or, when it can't
+// help, Wikipedia and Open Library), with Open Library ids, and cached in the
+// browser for a week. Curated authors also have a static copy under
+// public/data (built by scripts/add-author.mjs) for when the sources are down.
 
 import { buildAuthor, isOlAuthorKey, fetchWork, fetchBookDetails, normalizeTitle } from './sources.js';
 
@@ -33,8 +34,8 @@ export const getAuthors = () => getJson('authors.json');
 
 // Bumped when the lists change (v2: Wikipedia lists; v3: reader counts; v4: series from
 // table columns and captions, main-article works sections; v5: no TV credits; v6: page counts) so older
-// caches aren't used while the sources can be reached.
-const LIVE_VERSION = 6;
+// caches aren't used while the sources can be reached; v7: lists from Hardcover).
+const LIVE_VERSION = 7;
 const liveKey = (olKey, version = LIVE_VERSION) => `letterbooks:cache:author-v${version}:${olKey}`;
 
 function readSaved(key) {
@@ -55,16 +56,51 @@ function lastSaved(olKey) {
   return null;
 }
 
+// Books by this author that already have ids, which a rebuilt list keeps:
+// the ones in your reading data first, then the last list's.
+function knownBooks(refs, previous) {
+  let logged = [];
+  try {
+    const books = JSON.parse(localStorage.getItem('letterbooks:v1'))?.books ?? {};
+    logged = Object.entries(books)
+      .filter(([, b]) => refs.includes(b.authorSlug) && b.title)
+      .map(([id, b]) => ({ id, title: b.title, logged: true, book: previous?.books?.find((x) => x.id === id) ?? null }));
+  } catch {
+    // Nothing saved.
+  }
+  const listed = (previous?.books ?? []).filter((b) => !logged.some((k) => k.id === b.id)).map((b) => ({ id: b.id, title: b.title }));
+  return [...logged, ...listed];
+}
+
 // How long an author page waits for a rebuild before showing the saved copy.
 const FALLBACK_AFTER = 6000;
 const fresh = new Map(); // olKey -> author, saved within LIVE_TTL
 
+// Two lists are built at a time: the home page may want dozens at once, and
+// Hardcover allows 60 requests a minute.
+let building = 0;
+const waiting = [];
+async function inTurn(task) {
+  if (building >= 2) await new Promise((resolve) => waiting.push(resolve));
+  building++;
+  try {
+    return await task();
+  } finally {
+    building--;
+    waiting.shift()?.();
+  }
+}
+
 // Builds an author's list from the sources and saves it. Shared, so the home
 // page and an author page waiting on the same author only build it once.
-function rebuild(olKey) {
+function rebuild(olKey, curated = null) {
   const key = `build:${olKey}`;
   return memo(key, async () => {
-    const author = await buildAuthor(olKey);
+    const previous = lastSaved(olKey) ?? (curated && (await getJson(`authors/${curated.slug}.json`).catch(() => null)));
+    const refs = curated ? [olKey, curated.slug] : [olKey];
+    const built = await inTurn(() => buildAuthor(olKey, knownBooks(refs, previous)));
+    // A curated author keeps their slug, which your reading data refers to.
+    const author = curated ? { ...built, slug: curated.slug } : built;
     // A fallback caused by Wikipedia being unreachable shouldn't stick for a week.
     if (author.source.temporary) {
       setTimeout(() => cache.delete(key)); // try again next time
@@ -84,15 +120,15 @@ function rebuild(olKey) {
 // refreshed in the background. Otherwise a saved copy is only used when the
 // sources are down or slow: Wikipedia or Open Library being unreachable can
 // mean an error, a rough guess or a long wait, and a saved copy beats all three.
-async function getLiveAuthor(olKey, { quick = false } = {}) {
+async function getLiveAuthor(olKey, { quick = false, curated = null } = {}) {
   if (fresh.has(olKey)) return fresh.get(olKey);
   const saved = readSaved(liveKey(olKey));
   if (saved && Date.now() - saved.fetchedAt < LIVE_TTL) {
     fresh.set(olKey, saved.author);
     return saved.author;
   }
-  const build = rebuild(olKey);
-  const fallback = lastSaved(olKey);
+  const build = rebuild(olKey, curated);
+  const fallback = lastSaved(olKey) ?? (curated && (await getJson(`authors/${curated.slug}.json`).catch(() => null)));
   if (!fallback) return build;
   if (quick) {
     build.catch(() => {}); // refreshes the saved copy for next time
@@ -104,12 +140,12 @@ async function getLiveAuthor(olKey, { quick = false } = {}) {
 }
 
 // Rebuilds these authors' lists now, however recently they were saved, to
-// pick up new details such as page counts. Curated authors come with the
-// site, so they're always current and skipped. A few at a time, to go easy
-// on the sources. A rebuild that fails keeps the saved list.
+// pick up new details such as page counts. A few at a time, to go easy on
+// the sources. A rebuild that fails keeps the saved list.
 export async function refreshAuthors(refs, onProgress) {
   const curated = await getAuthors();
-  const live = [...new Set(refs)].filter((ref) => isOlAuthorKey(ref) && !curated.some((a) => a.olKey === ref));
+  const olKeyOf = (ref) => curated.find((a) => a.slug === ref || a.olKey === ref)?.olKey ?? ref;
+  const live = [...new Set(refs.map(olKeyOf))].filter(isOlAuthorKey);
   const queue = [...live];
   let done = 0;
   let failed = 0;
@@ -119,7 +155,8 @@ export async function refreshAuthors(refs, onProgress) {
         cache.delete(`build:${ref}`);
         fresh.delete(ref);
         try {
-          if ((await rebuild(ref)).source.temporary) failed++;
+          const c = curated.find((a) => a.olKey === ref) ?? null;
+          if ((await rebuild(ref, c)).source.temporary) failed++;
         } catch {
           failed++;
         }
@@ -132,11 +169,10 @@ export async function refreshAuthors(refs, onProgress) {
 
 // `ref` is a curated author's slug or an Open Library author key (OL…A).
 // An OL key that belongs to a curated author resolves to the curated data.
-export async function getAuthor(ref, options) {
-  if (isOlAuthorKey(ref)) {
-    const curated = (await getAuthors()).find((a) => a.olKey === ref);
-    return curated ? getAuthor(curated.slug) : getLiveAuthor(ref, options);
-  }
+export async function getAuthor(ref, options = {}) {
+  const curated = (await getAuthors()).find((a) => a.olKey === ref || a.slug === ref);
+  if (curated) return getLiveAuthor(curated.olKey, { ...options, curated });
+  if (isOlAuthorKey(ref)) return getLiveAuthor(ref, options);
   return getJson(`authors/${ref}.json`);
 }
 
@@ -310,14 +346,21 @@ export const TYPE_LABELS = { novel: 'Novel', collection: 'Collection', nonfictio
 // Release date, synopsis and genres for a book page, remembered for a month.
 export function getBookDetails(book, authorName) {
   return memo(`details:${book.id}`, async () => {
-    const storageKey = `letterbooks:cache:details:${book.id}`;
+    // Older cached details, from before Hardcover was asked; not worth keeping.
+    try {
+      localStorage.removeItem(`letterbooks:cache:details:${book.id}`);
+    } catch {
+      // Unavailable.
+    }
+    // v2: Hardcover's details first.
+    const storageKey = `letterbooks:cache:details-v2:${book.id}`;
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey));
       if (saved && Date.now() - saved.at < COVER_TTL) return saved.details;
     } catch {
       // No usable cache.
     }
-    const details = await fetchBookDetails({ olWorkId: book.olWorkId, title: book.title, authorName });
+    const details = await fetchBookDetails({ olWorkId: book.olWorkId, title: book.title, authorName, hardcoverSlug: book.hardcover?.slug });
     try {
       localStorage.setItem(storageKey, JSON.stringify({ at: Date.now(), details }));
     } catch {

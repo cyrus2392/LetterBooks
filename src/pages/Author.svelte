@@ -43,7 +43,8 @@
         {visible.length} books{#if ownedCount(ids)} · <span class="owned">{ownedCount(ids)} on your bookshelf</span>{/if}
       </p>
       <div class="buttons">
-        {#if author.live}
+        <!-- Curated authors (with a slug, not an Open Library key) are always on your list. -->
+        {#if author.live && /^OL\d+A$/.test(author.slug)}
           <button class="btn" class:primary={!following} aria-pressed={following}
                   onclick={() => setFollowing(author.olKey, author.name, !following)}>
             <Icon icon={following ? faCheck : faPlus} />
@@ -60,7 +61,7 @@
 
   {#if author.stale}
     <p class="notice warn">
-      Open Library or Wikipedia can't be reached right now, so this is the copy of {author.name}'s list saved on
+      The book sources can't be reached right now, so this is the copy of {author.name}'s list saved on
       {formatDate(new Date(author.stale.savedAt).toLocaleDateString('en-CA'))}. It may be out of date; it'll refresh
       once they're back.
     </p>
@@ -69,8 +70,13 @@
     <p class="notice warn">
       Open Library can't be reached right now, so this list was put together from
       {author.source.name === 'Wikipedia' ? 'Wikipedia and Hardcover' : 'Hardcover'}, with Hardcover's covers.
-      It isn't saved: once Open Library is back, the full list replaces it. A few books you mark as read in the meantime
-      may need marking again.
+      It isn't saved: once Open Library is back, the full list replaces it.
+    </p>
+  {:else if author.live && author.source?.name === 'Hardcover'}
+    <p class="notice">
+      This list comes from {author.name}'s books on
+      {#if author.source.url}<a href={author.source.url} target="_blank" rel="noopener">Hardcover</a>{:else}Hardcover{/if}, leaving out
+      split and audio editions and rarely read oddments. Use <strong>Edit list</strong> to hide anything that shouldn't count.
     </p>
   {:else if author.live && author.source?.name === 'Wikipedia'}
     <p class="notice">
@@ -84,7 +90,7 @@
     </p>
   {:else if author.live}
     <p class="notice">
-      Wikipedia doesn't have a bibliography for {author.name}, so this list was built automatically from Open Library and
+      Hardcover and Wikipedia don't have a list for {author.name}, so this one was built automatically from Open Library and
       may include novellas, short stories or duplicates. Use <strong>Edit list</strong> to hide anything that shouldn't count.
     </p>
   {/if}

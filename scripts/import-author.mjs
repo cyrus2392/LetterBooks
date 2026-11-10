@@ -84,7 +84,7 @@ const index = [];
 for (const file of (await readdir('public/data/authors')).sort()) {
   const a = JSON.parse(await readFile(`public/data/authors/${file}`, 'utf8'));
   const cover = a.books.find((b) => b.coverId)?.coverId ?? null;
-  index.push({ slug: a.slug, name: a.name, bookCount: a.books.length, coverId: cover });
+  index.push({ slug: a.slug, name: a.name, olKey: a.olKey, bookCount: a.books.length, coverId: cover });
 }
 await writeFile('public/data/authors.json', JSON.stringify(index, null, 2) + '\n');
 

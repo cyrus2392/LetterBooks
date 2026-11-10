@@ -23,7 +23,7 @@ const ALLOWED_ORIGIN = /^(https:\/\/cyrus2392\.github\.io|http:\/\/(localhost|12
 
 // Hardcover allows queries three levels deep at most: books > book_series > series.
 const AUTHOR_BY_NAME = `query ($name: String!) {
-  authors(where: {name: {_eq: $name}}, order_by: {books_count: desc_nulls_last}, limit: 1) { id name slug }
+  authors(where: {name: {_eq: $name}}, order_by: {books_count: desc_nulls_last}, limit: 3) { id name slug }
 }`;
 const AUTHOR_SEARCH = `query ($q: String!) {
   search(query: $q, query_type: "Author", per_page: 5) { results }
@@ -46,7 +46,7 @@ const NOT_AUTHOR = /editor|illustrat|translat|narrat|introduc|foreword|afterword
 
 export function hardcoverAuthor(request, url, env, ctx) {
   const name = url.searchParams.get('name')?.trim();
-  return answer(request, env, ctx, name, `v2/author/${name?.toLowerCase()}`, () => lookUp(name, env), (r) => r.books.length);
+  return answer(request, env, ctx, name, `v3/author/${name?.toLowerCase()}`, () => lookUp(name, env), (r) => r.books.length);
 }
 
 export function hardcoverBook(request, url, env, ctx) {
@@ -132,22 +132,32 @@ async function book(slug, env) {
   };
 }
 
+// Hardcover has duplicate records for some authors, with no books on them
+// ("J. K. Rowling" twice), so each candidate is tried until one has books.
 async function lookUp(name, env) {
-  let author = (await graphql(AUTHOR_BY_NAME, { name }, env)).authors[0];
-  if (!author) {
-    // Names are written differently ("J.R.R." / "J. R. R."), so search, but
-    // only accept an author with the same surname and first initial.
+  const candidates = (await graphql(AUTHOR_BY_NAME, { name }, env)).authors;
+  // Names are written differently ("J.R.R." / "J. R. R."), so search too, but
+  // only accept an author with the same surname and first initial.
+  const searched = async () => {
     const { search } = await graphql(AUTHOR_SEARCH, { q: name }, env);
-    const hit = (search?.results?.hits ?? []).map((h) => h.document).find((d) => d?.name && sameName(d.name, name));
-    if (hit) author = { id: Number(hit.id), name: hit.name, slug: hit.slug };
+    return (search?.results?.hits ?? [])
+      .map((h) => h.document)
+      .filter((d) => d?.name && sameName(d.name, name) && !candidates.some((c) => c.id === Number(d.id)))
+      .map((d) => ({ id: Number(d.id), name: d.name, slug: d.slug }));
+  };
+  for (const list of [candidates, searched]) {
+    for (const author of typeof list === 'function' ? await list() : list) {
+      const books = await booksBy(author, env);
+      if (books.length) return { author: { name: author.name, slug: author.slug }, books };
+    }
   }
-  if (!author) return { author: null, books: [] };
+  return { author: null, books: [] };
+}
 
+async function booksBy(author, env) {
   const { books } = await graphql(BOOKS, { id: author.id }, env);
   const wrote = (b) => (b.contributions ?? []).some((c) => c.author_id === author.id && !NOT_AUTHOR.test(c.contribution ?? ''));
-  return {
-    author: { name: author.name, slug: author.slug },
-    books: books
+  return books
       .filter((b) => b.title && wrote(b))
       .map((b) => ({
         title: b.title,
@@ -162,8 +172,7 @@ async function lookUp(name, env) {
         series: (b.book_series ?? [])
           .filter((s) => s.series?.name)
           .map((s) => ({ name: s.series.name, position: Number.isFinite(s.position) ? s.position : null })),
-      })),
-  };
+      }));
 }
 
 const plain = (s) => s.normalize('NFKD').toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);

@@ -9,6 +9,8 @@
 //       The author's books on Hardcover: title, year, pages, series, rating,
 //       cover. Remembered for a day, so most visits don't reach Hardcover
 //       (which allows 60 requests a minute).
+//   GET /hardcover/book?slug=<Hardcover book slug>
+//       One book's description, release date and genres. Remembered for a day.
 //   GET /hardcover/search?type=author|book&q=<text>
 //       Hardcover's search: authors (name, book count) or books (title,
 //       authors, year, cover), most-read first. Remembered for a day.
@@ -45,6 +47,12 @@ const NOT_AUTHOR = /editor|illustrat|translat|narrat|introduc|foreword|afterword
 export function hardcoverAuthor(request, url, env, ctx) {
   const name = url.searchParams.get('name')?.trim();
   return answer(request, env, ctx, name, `v2/author/${name?.toLowerCase()}`, () => lookUp(name, env), (r) => r.books.length);
+}
+
+export function hardcoverBook(request, url, env, ctx) {
+  const slug = url.searchParams.get('slug')?.trim();
+  if (slug && !/^[a-z0-9-]+$/.test(slug)) return json(400, { error: 'Not a book slug' }, request.headers.get('origin') ?? '');
+  return answer(request, env, ctx, slug, `v1/book/${slug}`, () => book(slug, env), (r) => Boolean(r.book));
 }
 
 export function hardcoverSearch(request, url, env, ctx) {
@@ -98,6 +106,29 @@ async function search(q, type, env) {
               year: d.release_year ?? null,
               image: d.image?.url ?? null,
             })),
+  };
+}
+
+const BOOK = `query ($slug: String!) {
+  books(where: {slug: {_eq: $slug}}, limit: 1) { title description release_date cached_tags }
+}`;
+
+// Genre tags people have given the book, most-used first.
+function genres(tags) {
+  const list = (tags?.Genre ?? []).filter((t) => t?.tag).sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
+  return list.map((t) => t.tag);
+}
+
+async function book(slug, env) {
+  const b = (await graphql(BOOK, { slug }, env)).books[0];
+  if (!b) return { book: null };
+  return {
+    book: {
+      title: b.title,
+      description: b.description?.trim() || null,
+      released: b.release_date ?? null,
+      genres: genres(b.cached_tags),
+    },
   };
 }
 

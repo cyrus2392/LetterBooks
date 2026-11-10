@@ -9,6 +9,8 @@
 //       A specific Open Library cover.
 //   GET /hardcover/author?name=<author name>
 //       An author's books on Hardcover (see hardcover.js).
+//   GET /hardcover/book?slug=<slug>
+//       A book's description, release date and genres (see hardcover.js).
 //   GET /hardcover/search?type=author|book&q=<text>
 //       Hardcover's search (see hardcover.js).
 //
@@ -18,7 +20,7 @@
 // day) the Worker just skips storing and still serves the image.
 
 import { fetchUkCover } from '../../../src/lib/sources.js';
-import { hardcoverAuthor, hardcoverSearch } from './hardcover.js';
+import { hardcoverAuthor, hardcoverBook, hardcoverSearch } from './hardcover.js';
 
 const SIZES = new Set(['S', 'M', 'L']);
 const DAY = 24 * 60 * 60;
@@ -31,6 +33,7 @@ export default {
     if (request.method !== 'GET' && request.method !== 'HEAD') return text(405, 'Method not allowed');
     const url = new URL(request.url);
     if (url.pathname === '/hardcover/author') return hardcoverAuthor(request, url, env, ctx);
+    if (url.pathname === '/hardcover/book') return hardcoverBook(request, url, env, ctx);
     if (url.pathname === '/hardcover/search') return hardcoverSearch(request, url, env, ctx);
     const match = url.pathname.match(/^\/cover\/(work|id)\/([A-Za-z0-9]+)$/);
     if (!match) return text(404, 'Not found');

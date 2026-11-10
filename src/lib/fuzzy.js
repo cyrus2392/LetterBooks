@@ -53,25 +53,3 @@ export function fuzzyMatch(query, text) {
   if (!typed.length) return false;
   return typed.every((t, i) => have.some((w) => close(t, w, i === typed.length - 1)));
 }
-
-// Your search with each misspelt word swapped for the closest word in
-// `texts` (say, titles and names another search found), or null if nothing
-// needed changing.
-export function correct(query, texts) {
-  const vocab = [...new Set(texts.flatMap(words))];
-  let changed = false;
-  const fixed = words(query).map((t) => {
-    if (vocab.includes(t)) return t;
-    const max = allowed(t);
-    let best = null;
-    let bestD = max + 1;
-    for (const w of vocab) {
-      const d = distance(t, w, max);
-      if (d < bestD) [best, bestD] = [w, d];
-    }
-    if (!best) return t;
-    changed = true;
-    return best;
-  });
-  return changed ? fixed.join(' ') : null;
-}

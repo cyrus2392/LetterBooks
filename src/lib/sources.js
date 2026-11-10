@@ -5,7 +5,7 @@
 // Node (scripts/, which install a DOMParser for the Wikipedia parsing).
 
 import { wikipediaBibliography } from './wikipedia.js';
-import { correct } from './fuzzy.js';
+import { fuzzyMatch } from './fuzzy.js';
 
 const OL = 'https://openlibrary.org';
 const WIKIDATA = 'https://query.wikidata.org/sparql';
@@ -36,11 +36,6 @@ export const normalizeTitle = (s) =>
 
 export const slugify = (s) =>
   s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
-// Search. Open Library first; when it can't be reached, Hardcover's search
-// (better at finding things) together with Wikidata's, which records Open
-// Library's ids for authors and books, so results lead to the same author
-// and book pages. Both return { source, authors | books }.
 
 const WD_API = 'https://www.wikidata.org/w/api.php';
 
@@ -97,20 +92,6 @@ const wikidataAuthorNamed = (name) =>
     .then((people) => people.map(wikidataAuthor).find((a) => a.olKey && sameName(a.name, name) && WRITER.test(a.description ?? '')) ?? null)
     .catch(() => null);
 
-// Open Library only matches whole words as typed. When it finds nothing,
-// Hardcover's search (which allows for typos) suggests the words you
-// probably meant, and Open Library is asked again with those. The result
-// says what was searched for instead (correctedTo).
-async function withTypoFix(q, type, search, vocabOf) {
-  const found = await search(q);
-  if (found.length) return { found, correctedTo: null };
-  const hc = await hardcoverSearch(type, q);
-  const fixed = hc && correct(q, vocabOf(hc));
-  if (!fixed) return { found, correctedTo: null };
-  const again = await search(fixed).catch(() => []);
-  return again.length ? { found: again, correctedTo: fixed } : { found, correctedTo: null };
-}
-
 async function olAuthors(q, limit) {
   const { docs } = await getJson(`${OL}/search/authors.json?q=${encodeURIComponent(q)}&limit=${limit}`);
   return docs
@@ -124,29 +105,50 @@ async function olAuthors(q, limit) {
     }));
 }
 
+// Hardcover hits need Open Library ids, since author and book pages are
+// built from those. A name Open Library's own results don't cover is looked
+// up on Wikidata, once per name.
+function authorFinder(olAuthorList) {
+  const asked = new Map();
+  return (name) => {
+    // Open Library often has several records for one person; the one with most works is the real one.
+    const known = olAuthorList
+      .filter((a) => sameName(a.name, name))
+      .sort((a, b) => (b.workCount ?? 0) - (a.workCount ?? 0))[0];
+    if (known) return Promise.resolve(known);
+    if (!asked.has(name)) asked.set(name, wikidataAuthorNamed(name));
+    return asked.get(name);
+  };
+}
+
+const unique = (list, keyOf) => {
+  const seen = new Set();
+  return list.filter((x) => x && !seen.has(keyOf(x)) && seen.add(keyOf(x)));
+};
+
+// Search. Hardcover first, since its search is better (it ranks well-known
+// books and authors first and allows for typos); Open Library's results fill
+// in after it and stand in when Hardcover can't be reached. Wikidata is the
+// last resort. Both return { source, authors | books }.
 export async function searchAuthors(q, limit = 10) {
-  try {
-    const { found, correctedTo } = await withTypoFix(q, 'author', (text) => olAuthors(text, limit), (hc) =>
-      hc.filter((h) => h.books >= 3).slice(0, 3).map((h) => h.name),
-    );
-    return { source: 'Open Library', authors: found, correctedTo };
-  } catch (error) {
-    const [hc, people] = await Promise.all([hardcoverSearch('author', q), wikidataSearch(q, ['P648', 'P31=Q5'], limit).catch(() => null)]);
-    if (!hc && !people) throw error;
-    const fromWikidata = (people ?? []).map(wikidataAuthor).filter((a) => a.olKey && a.name);
-    // Hardcover's order, each matched to Wikidata for its Open Library id;
-    // then anyone else Wikidata found.
+  const [hc, ol] = await Promise.all([hardcoverSearch('author', q), olAuthors(q, limit).catch(() => null)]);
+  // Hardcover also lists stray names with a book or two (misspellings, anthologies).
+  const hits = (hc ?? []).filter((h) => h.books >= 3 && !NOT_IN_SEARCH.test(h.name)).slice(0, 6);
+  if (hits.length) {
+    const find = authorFinder(ol ?? []);
     const fromHardcover = await Promise.all(
-      // Hardcover also lists stray names with a book or two (misspellings, anthologies).
-      (hc ?? []).filter((h) => h.books >= 3).slice(0, 6).map(async (h) => {
-        const match = fromWikidata.find((a) => sameName(a.name, h.name)) ?? (await wikidataAuthorNamed(h.name));
-        return match && { ...match, workCount: h.books || null };
+      hits.map(async (h) => {
+        const match = await find(h.name);
+        return match && { ...match, workCount: match.workCount ?? h.books };
       }),
     );
-    const authors = [];
-    for (const a of [...fromHardcover, ...fromWikidata]) if (a && !authors.some((b) => b.olKey === a.olKey)) authors.push(a);
-    return { source: hc ? 'Hardcover and Wikidata' : 'Wikidata', authors };
+    const authors = unique([...fromHardcover, ...(ol ?? []).filter((a) => !NOT_IN_SEARCH.test(a.name))], (a) => a.olKey).slice(0, limit);
+    if (authors.length) return { source: 'Hardcover', authors };
   }
+  if (ol) return { source: 'Open Library', authors: ol };
+
+  const people = await wikidataSearch(q, ['P648', 'P31=Q5'], limit);
+  return { source: 'Wikidata', authors: unique(people.map(wikidataAuthor).filter((a) => a.olKey && a.name), (a) => a.olKey) };
 }
 
 async function olBooks(q, limit) {
@@ -165,34 +167,44 @@ async function olBooks(q, limit) {
     }));
 }
 
+// Hardcover lists audio dramatisations, samplers and the like alongside the books.
+const NOT_IN_SEARCH = /\bsummary\b|\bdramati[sz]ed\b|\bsampler\b|\(\d+ of \d+\)|\bcoloring\b|\bcolouring\b/i;
+
+const isBook = (title) => !NOT_A_BOOK.test(title) && !NOT_IN_SEARCH.test(title) && !title.includes(' / ');
+
+// The same title, allowing for a series name in front ("Mistborn: The Final Empire").
+function sameTitle(a, b) {
+  const after = (t) => (t.includes(': ') ? normalizeTitle(t.slice(t.indexOf(': ') + 2)) : null);
+  return normalizeTitle(a) === normalizeTitle(b) || after(a) === normalizeTitle(b) || after(b) === normalizeTitle(a);
+}
+
+const bookKey = (b) => `${normalizeTitle(b.title)}|${nameWords(b.authorName ?? '').at(-1)}`;
+
 export async function searchBooks(q, limit = 12) {
-  try {
-    const { found, correctedTo } = await withTypoFix(q, 'book', (text) => olBooks(text, limit), (hc) =>
-      hc.slice(0, 3).flatMap((h) => [h.title, ...h.authors]),
-    );
-    return { source: 'Open Library', books: found, correctedTo };
-  } catch (error) {
-    const [hc, fromWikidata] = await Promise.all([hardcoverSearch('book', q), wikidataBooks(q, limit).catch(() => null)]);
-    if (!hc && !fromWikidata) throw error;
-    // Hardcover's order. A book Wikidata also found keeps its Open Library id;
-    // otherwise its author is matched on Wikidata, and the book gets the id
-    // its author's page gives books without one (the page finds it by title).
+  const [hc, ol] = await Promise.all([hardcoverSearch('book', q), olBooks(q, limit).catch(() => null)]);
+  const hits = (hc ?? []).filter((h) => h.authors[0] && isBook(h.title)).slice(0, limit);
+  if (hits.length) {
+    const olList = ol ?? [];
+    const find = authorFinder(olList.map((b) => ({ olKey: b.authorKey, name: b.authorName })));
+    // Hardcover's order. A book Open Library also found keeps its work id;
+    // otherwise it gets the id its author's page gives books without one
+    // (the page finds it by title).
     const fromHardcover = await Promise.all(
-      (hc ?? []).filter((h) => !NOT_A_BOOK.test(h.title) && !h.title.includes(' / ')).slice(0, limit).map(async (h) => {
-        const known = fromWikidata?.find((b) => normalizeTitle(b.title) === normalizeTitle(h.title) && sameName(b.authorName, h.authors[0]));
+      hits.map(async (h) => {
+        const sameAuthor = olList.filter((b) => sameName(b.authorName, h.authors[0]));
+        const known = sameAuthor.find((b) => normalizeTitle(b.title) === normalizeTitle(h.title)) ?? sameAuthor.find((b) => sameTitle(b.title, h.title));
         if (known) return { ...known, year: known.year ?? h.year, image: h.image };
-        if (!h.authors[0]) return null;
-        const author = fromWikidata?.find((b) => sameName(b.authorName, h.authors[0])) ?? (await wikidataAuthorNamed(h.authors[0]));
-        const authorKey = author?.authorKey ?? author?.olKey;
-        if (!authorKey) return null;
-        const id = `${authorKey}-${normalizeTitle(h.title)}`;
-        return { id, olWorkId: null, title: h.title, year: h.year, coverId: null, image: h.image, authorName: h.authors[0], authorKey };
+        const author = await find(h.authors[0]);
+        if (!author?.olKey) return null;
+        const id = `${author.olKey}-${normalizeTitle(h.title)}`;
+        return { id, olWorkId: null, title: h.title, year: h.year, coverId: null, image: h.image, authorName: h.authors[0], authorKey: author.olKey };
       }),
     );
-    const books = [];
-    for (const b of [...fromHardcover, ...(fromWikidata ?? [])]) if (b && !books.some((x) => x.id === b.id)) books.push(b);
-    return { source: hc ? 'Hardcover and Wikidata' : 'Wikidata', books };
+    const books = unique(unique([...fromHardcover, ...olList.filter((b) => isBook(b.title) && fuzzyMatch(q, `${b.title} ${b.authorName}`))], (b) => b.id), bookKey).slice(0, limit);
+    if (books.length) return { source: 'Hardcover', books };
   }
+  if (ol) return { source: 'Open Library', books: ol };
+  return { source: 'Wikidata', books: await wikidataBooks(q, limit) };
 }
 
 // Written works on Wikidata with an Open Library id, with their authors' Open Library ids.

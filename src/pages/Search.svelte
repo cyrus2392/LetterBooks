@@ -64,12 +64,11 @@
     {#await remoteAuthors}
       <h2>More authors</h2>
       <p class="muted">Searching…</p>
-    {:then { source, authors, correctedTo }}
+    {:then { source, authors }}
       {@const fresh = authors.filter((a) => !local.knownKeys.has(a.olKey))}
       <h2>Authors on {source}</h2>
-      {#if correctedTo}<p class="muted note">No exact matches, so showing authors for “{correctedTo}”.</p>{/if}
-      {#if source !== 'Open Library'}
-        <p class="muted note">Open Library can't be reached right now, so these results come from {source}.</p>
+      {#if source === 'Wikidata'}
+        <p class="muted note">Hardcover and Open Library can't be reached right now, so these results come from Wikidata.</p>
       {/if}
       {#if fresh.length}
         <ul class="authors">
@@ -89,7 +88,7 @@
       {/if}
     {:catch}
       <h2>More authors</h2>
-      <p class="muted">Couldn't reach Open Library or Wikidata. Try again in a moment.</p>
+      <p class="muted">Couldn't reach Hardcover, Open Library or Wikidata. Try again in a moment.</p>
     {/await}
   </section>
 
@@ -97,11 +96,10 @@
     {#await remoteBooks}
       <h2>More books</h2>
       <p class="muted">Searching…</p>
-    {:then { source, books, correctedTo }}
+    {:then { source, books }}
       {@const localIds = new Set(local.books.map((b) => b.id))}
       {@const fresh = books.filter((b) => !localIds.has(b.id)).map((b) => ({ ...b, authorRef: b.authorKey }))}
       <h2>Books on {source}</h2>
-      {#if correctedTo}<p class="muted note">No exact matches, so showing books for “{correctedTo}”.</p>{/if}
       {#if fresh.length}
         {@render bookList(fresh)}
       {:else}
@@ -109,7 +107,7 @@
       {/if}
     {:catch}
       <h2>More books</h2>
-      <p class="muted">Couldn't reach Open Library or Wikidata. Try again in a moment.</p>
+      <p class="muted">Couldn't reach Hardcover, Open Library or Wikidata. Try again in a moment.</p>
     {/await}
   </section>
 {/await}
